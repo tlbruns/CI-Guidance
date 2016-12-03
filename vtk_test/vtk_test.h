@@ -4,7 +4,9 @@
 #include <QtWidgets/QMainWindow>
 #include "ui_vtk_test.h"
 #include <qtimer.h>
+#include <qelapsedtimer.h>
 #include <qlabel.h>
+#include <qfile.h>
 #include "Tracker.h"
 #include <vtkActor.h>
 #include <Conversions.h>
@@ -43,6 +45,7 @@ protected slots:
 	void slot_Demo();
 	void slot_DatalogStart();
 	void slot_DatalogStop();
+	void slot_WriteData(double,double);
 
 signals:
 	void sgn_NewProbePosition(double,double,double);
@@ -54,6 +57,7 @@ private:
 	Ui::vtk_testClass ui;
 	QTimer			  m_timer;
 	QTimer			  m_frameRateTimer;
+	QElapsedTimer	  m_datalogTimer;
 	int				  m_frames;
 	QLabel			  m_statusLabel;
 	QLabel			  m_frameRateLabel;
@@ -61,6 +65,7 @@ private:
 	QVTKWidget        *m_pQVTK_oblique;
 	QVTKWidget        *m_pQVTK_front;
 	QVTKWidget        *m_pQVTK_side;
+	QFile			  *pDatalogFile;
 	int				  m_time;
 	vtkRenderer       *m_pRenderer_oblique;
 	vtkRenderer		  *m_pRenderer_top;
@@ -73,8 +78,6 @@ private:
 	RotationMatrix	  dtRotMatrix;
 	Eigen::MatrixXd	  CI_entry;
 	bool			  flag_SetTarget;
-	bool			  flag_DatalogStart;
-	bool			  flag_DatalogStop;
 	void Update_err(std::vector<ToolInformationStruct> const& tools);
 };
 

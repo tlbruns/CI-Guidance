@@ -9,6 +9,9 @@
 #include <qscreen.h>
 #include <QVTKWidget.h>
 #include <qfiledialog.h>
+#include <qfile.h>
+#include <qdatetime.h>
+#include <qtextstream.h>
 #include <vtkCamera.h>
 #include <vtkRenderer.h>
 #include <vtkRenderWindow.h>
@@ -48,11 +51,10 @@ vtk_test::vtk_test(QWidget *parent)
 	 m_time(0),
 	 m_tracker(TRACKER_COMPORT),
 	 m_frames(0),
-	 flag_SetTarget(FALSE),
-	 flag_DatalogStart(FALSE),
-	 flag_DatalogStop(FALSE)
+	 flag_SetTarget(FALSE)
 {
 	pDemo_Widget = NULL;
+	pDatalogFile = NULL;
 
 	ui.setupUi(this);
 	
@@ -154,7 +156,15 @@ vtk_test::vtk_test(QWidget *parent)
 
 vtk_test::~vtk_test()
 {
+	// stop tracker
 	m_tracker.StopTracking();
+	
+	// Close file
+	if(pDatalogFile != NULL){
+		if(pDatalogFile->isOpen()){
+			pDatalogFile->close();
+		}
+	}
 }
 
 void vtk_test::resizeEvent(QResizeEvent *event)
@@ -262,22 +272,17 @@ void vtk_test::slot_onGUITimer()
 
 	if(flag_SetTarget)
 	{
-		// set current CI tool position as the target
+		// set current CI tool position as the target (CI_entry)
 		Eigen::RowVectorXd temp(3);
 		temp <<	Trans_final[2](3,0), Trans_final[2](3,1), Trans_final[2](3,2);
-		std::cout<< temp;
 		CI_entry = temp;
 
-		//CI_entry = Eigen::MatrixXd(Trans_final[2](3,0), Trans_final[2](3,1), Trans_final[2](3,2));
-		
 		// update target actor
 		m_pActor_CItarget->SetUserTransform(pvtk_T_CItool);
 
 		// reset flag
 		flag_SetTarget = FALSE;
 	}
-
-
 
 	emit sgn_NewProbePosition( Trans_final[1](3,0), Trans_final[1](3,1), Trans_final[1](3,2) );
 	emit sgn_NewCIPosition( Trans_final[2](3,0), Trans_final[2](3,1), Trans_final[2](3,2) );
@@ -473,13 +478,55 @@ void vtk_test::slot_SetTarget()
 
 void vtk_test::slot_DatalogStart()
 {
-	flag_DatalogStart = TRUE;
+	// create time-stamped filename
+	QString filename = QDate::currentDate().toString("yyyy-MM-dd");
+	QString time = QTime::currentTime().toString("_hh-mm");
+	filename.append(time);
+	filename.append(QString(".csv"));
+
+	// open file
+	pDatalogFile = new QFile(filename);
+	pDatalogFile->open(QIODevice::WriteOnly);
+
+	// ensure file opened ok
+	if(!pDatalogFile->isOpen()){
+		cout << "Error opening file";
+		return;
+	}
+
+	// write header
+	QTextStream datalogStream(pDatalogFile);
+	datalogStream << "elapsed time [ms], error [mm]\n";
+	
+	// start timer
+	m_datalogTimer.start();
+
+	// enable datalogging
+	connect(this, SIGNAL(sgn_err(double,double)), this, SLOT(slot_WriteData(double,double)));
+
+	// Note: file is automatically closed when program is terminated
 }
 
 void vtk_test::slot_DatalogStop()
 {
-	flag_DatalogStop = TRUE;
+	// stop datalogging
+	disconnect(this, SIGNAL(sgn_err(double,double)), this, SLOT(slot_WriteData(double,double)));
+
+	// close file
+	if(pDatalogFile != NULL){
+		if(pDatalogFile->isOpen()){
+			pDatalogFile->close();
+		}
+	}
 }
 
+void vtk_test::slot_WriteData(double err_ci, double err_mag)
+{
+	// write next line
+	QTextStream datalogStream(pDatalogFile);
+	datalogStream << QString::number(m_datalogTimer.elapsed()) << ", " << QString::number(err_ci) << endl;
 
+	// restart timer
+	//m_datalogTimer.restart();
+}
 
