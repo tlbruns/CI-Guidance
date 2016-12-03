@@ -31,6 +31,7 @@ public:
     QAction *actionLoad_Patient_File;
     QAction *actionTracker_Setup;
     QAction *actionRegister_Patient;
+    QAction *actionDemo;
     QWidget *centralWidget;
     QGridLayout *gridLayout_3;
     QGridLayout *gridlayout;
@@ -52,6 +53,8 @@ public:
         actionTracker_Setup->setObjectName(QStringLiteral("actionTracker_Setup"));
         actionRegister_Patient = new QAction(vtk_testClass);
         actionRegister_Patient->setObjectName(QStringLiteral("actionRegister_Patient"));
+        actionDemo = new QAction(vtk_testClass);
+        actionDemo->setObjectName(QStringLiteral("actionDemo"));
         centralWidget = new QWidget(vtk_testClass);
         centralWidget->setObjectName(QStringLiteral("centralWidget"));
         gridLayout_3 = new QGridLayout(centralWidget);
@@ -68,7 +71,7 @@ public:
         vtk_testClass->setCentralWidget(centralWidget);
         menuBar = new QMenuBar(vtk_testClass);
         menuBar->setObjectName(QStringLiteral("menuBar"));
-        menuBar->setGeometry(QRect(0, 0, 1016, 38));
+        menuBar->setGeometry(QRect(0, 0, 1016, 31));
         menuFile = new QMenu(menuBar);
         menuFile->setObjectName(QStringLiteral("menuFile"));
         vtk_testClass->setMenuBar(menuBar);
@@ -82,6 +85,7 @@ public:
         menuBar->addAction(menuFile->menuAction());
         menuFile->addAction(actionTracker_Setup);
         menuFile->addAction(actionRegister_Patient);
+        menuFile->addAction(actionDemo);
         menuFile->addAction(actionClose);
 
         retranslateUi(vtk_testClass);
@@ -97,6 +101,7 @@ public:
         actionLoad_Patient_File->setText(QApplication::translate("vtk_testClass", "Load Patient File", 0));
         actionTracker_Setup->setText(QApplication::translate("vtk_testClass", "Tracker Setup", 0));
         actionRegister_Patient->setText(QApplication::translate("vtk_testClass", "Register Patient", 0));
+        actionDemo->setText(QApplication::translate("vtk_testClass", "Demo", 0));
         menuFile->setTitle(QApplication::translate("vtk_testClass", "File", 0));
     } // retranslateUi
 

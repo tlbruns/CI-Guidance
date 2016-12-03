@@ -8,7 +8,6 @@ Q_DECLARE_METATYPE(Eigen::MatrixXd);
 
 int main(int argc, char *argv[])
 {
-	printf("Hi");
 	Eigen::MatrixXd A;
 	qRegisterMetaType<Eigen::MatrixXd>(&A);
 

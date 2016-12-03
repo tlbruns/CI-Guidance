@@ -1,5 +1,6 @@
 #include "vtk_test.h"
 #include "patient_reg_widget.h"
+#include "demo_widget.h"
 
  #include <vtkAutoInit.h>
  VTK_MODULE_INIT(vtkRenderingOpenGL);
@@ -46,8 +47,13 @@ vtk_test::vtk_test(QWidget *parent)
 	: QMainWindow(parent),
 	 m_time(0),
 	 m_tracker(TRACKER_COMPORT),
-	 m_frames(0)
+	 m_frames(0),
+	 flag_SetTarget(FALSE),
+	 flag_DatalogStart(FALSE),
+	 flag_DatalogStop(FALSE)
 {
+	pDemo_Widget = NULL;
+
 	ui.setupUi(this);
 	
 	double dpi = QApplication::screens().at(0)->physicalDotsPerInch();
@@ -135,6 +141,8 @@ vtk_test::vtk_test(QWidget *parent)
 	m_tracker.StartTracking();
 		
 	connect(ui.actionRegister_Patient, SIGNAL(triggered()),this, SLOT(slot_Register_Patient()));
+	connect(ui.actionTracker_Setup, SIGNAL(triggered()), this, SLOT(slot_Tracker_Setup()));
+	connect(ui.actionDemo, SIGNAL(triggered()), this, SLOT(slot_Demo()));
 	connect(this, SIGNAL(sgn_NewProbePosition(double,double,double)), iw, SLOT(slot_NewProbePosition(double,double,double)));
 	connect(this, SIGNAL(sgn_NewCIPosition(double,double,double)), iw, SLOT(slot_NewCIPosition(double,double,double)));
 	connect(this, SIGNAL(sgn_NewMagPosition(double,double,double)), iw, SLOT(slot_NewMagPosition(double,double,double)));
@@ -142,7 +150,6 @@ vtk_test::vtk_test(QWidget *parent)
 	
 	ui.statusBar->addWidget( &m_frameRateLabel );
 }
-
 
 
 vtk_test::~vtk_test()
@@ -253,6 +260,25 @@ void vtk_test::slot_onGUITimer()
 		emit sgn_err(tip_err, 5);
 	}
 
+	if(flag_SetTarget)
+	{
+		// set current CI tool position as the target
+		Eigen::RowVectorXd temp(3);
+		temp <<	Trans_final[2](3,0), Trans_final[2](3,1), Trans_final[2](3,2);
+		std::cout<< temp;
+		CI_entry = temp;
+
+		//CI_entry = Eigen::MatrixXd(Trans_final[2](3,0), Trans_final[2](3,1), Trans_final[2](3,2));
+		
+		// update target actor
+		m_pActor_CItarget->SetUserTransform(pvtk_T_CItool);
+
+		// reset flag
+		flag_SetTarget = FALSE;
+	}
+
+
+
 	emit sgn_NewProbePosition( Trans_final[1](3,0), Trans_final[1](3,1), Trans_final[1](3,2) );
 	emit sgn_NewCIPosition( Trans_final[2](3,0), Trans_final[2](3,1), Trans_final[2](3,2) );
 	m_frames++;
@@ -262,8 +288,8 @@ void vtk_test::Update_err(std::vector<ToolInformationStruct> const& tools)
 {
 	if (CI_entry.rows() > 0)	// check if value has been set (via registration)
 	{
-		double tip_err = sqrt( pow((-tools[2].y - (CI_entry(0,0))),2) + 
-							   pow((-tools[2].x - (CI_entry(0,1))),2) +
+		double tip_err = sqrt( pow((-tools[2].y - (CI_entry(0,0))),2) + // originally this was tools[2].y
+							   pow((-tools[2].x - (CI_entry(0,1))),2) + // originally this was tools[2].x
 							   pow((-tools[2].z - (CI_entry(0,2))),2) );
 		emit sgn_err(tip_err, 100);
 	}
@@ -327,6 +353,14 @@ void vtk_test::SetTransformforCI_target(patient_data ref_patient_data, Eigen::Ma
 	vtkT_CI->SetMatrix(T.data());
 	m_pActor_CItarget->SetUserTransform( vtkT_CI );
 }
+
+void vtk_test::SetTransformforCI_target(Eigen::MatrixXd T_target)
+{
+	vtkSmartPointer<vtkTransform> vtkT_CI = vtkSmartPointer<vtkTransform>::New();
+	vtkT_CI->SetMatrix(T_target.data());
+	m_pActor_CItarget->SetUserTransform( vtkT_CI );
+}
+
 
 void vtk_test::Initialize()
 {	
@@ -409,3 +443,43 @@ void vtk_test::slot_Register_Patient()
 	//m_pRenderer_front->AddActor(m_pActor_CItarget);
 	//m_pRenderer_side->AddActor(m_pActor_CItarget);
 }
+
+void vtk_test::slot_Tracker_Setup()
+{
+}
+
+void vtk_test::slot_Demo()
+{
+	// ensure we are not creating duplicates
+	if(pDemo_Widget != NULL)
+	{
+		delete pDemo_Widget;
+	}
+	pDemo_Widget = new Demo_Widget();
+
+	// connect signals from Demo_Widget to slots in vtk_test
+	connect(pDemo_Widget, SIGNAL(sgn_SetTarget()),	  this, SLOT(slot_SetTarget()));
+	connect(pDemo_Widget, SIGNAL(sgn_DatalogStart()), this, SLOT(slot_DatalogStart()));
+	connect(pDemo_Widget, SIGNAL(sgn_DatalogStop()),  this, SLOT(slot_DatalogStop()));
+
+	// open dialog
+	pDemo_Widget->exec();
+}
+
+void vtk_test::slot_SetTarget()
+{
+	flag_SetTarget = TRUE;
+}
+
+void vtk_test::slot_DatalogStart()
+{
+	flag_DatalogStart = TRUE;
+}
+
+void vtk_test::slot_DatalogStop()
+{
+	flag_DatalogStop = TRUE;
+}
+
+
+
