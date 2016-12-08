@@ -179,6 +179,20 @@
        </layout>
       </item>
       <item>
+       <widget class="QPushButton" name="button_centerProbe">
+        <property name="font">
+         <font>
+          <pointsize>8</pointsize>
+          <weight>50</weight>
+          <bold>false</bold>
+         </font>
+        </property>
+        <property name="text">
+         <string>Center View</string>
+        </property>
+       </widget>
+      </item>
+      <item>
        <spacer name="horizontalSpacer">
         <property name="orientation">
          <enum>Qt::Horizontal</enum>
@@ -320,7 +334,7 @@
        </layout>
       </item>
       <item>
-       <widget class="QPushButton" name="pushButton">
+       <widget class="QPushButton" name="button_centerCItool">
         <property name="font">
          <font>
           <pointsize>8</pointsize>
@@ -489,7 +503,7 @@
      </property>
      <layout class="QGridLayout" name="gridLayout">
       <item row="3" column="0">
-       <widget class="QLabel" name="label_Magnet_err">
+       <widget class="QLabel" name="label_text_Magnet">
         <property name="font">
          <font>
           <pointsize>8</pointsize>
@@ -593,7 +607,7 @@
        </widget>
       </item>
       <item row="0" column="0">
-       <widget class="QLabel" name="label_CI_Tool_err">
+       <widget class="QLabel" name="label_text_CITool">
         <property name="font">
          <font>
           <pointsize>8</pointsize>
@@ -647,7 +661,7 @@
        </widget>
       </item>
       <item row="0" column="1">
-       <widget class="QLabel" name="label_10">
+       <widget class="QLabel" name="label_text_error2_2">
         <property name="font">
          <font>
           <pointsize>8</pointsize>
@@ -665,7 +679,7 @@
        </widget>
       </item>
       <item row="3" column="1">
-       <widget class="QLabel" name="label_11">
+       <widget class="QLabel" name="label_text_error2">
         <property name="font">
          <font>
           <pointsize>8</pointsize>
