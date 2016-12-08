@@ -320,6 +320,20 @@
        </layout>
       </item>
       <item>
+       <widget class="QPushButton" name="pushButton">
+        <property name="font">
+         <font>
+          <pointsize>8</pointsize>
+          <weight>50</weight>
+          <bold>false</bold>
+         </font>
+        </property>
+        <property name="text">
+         <string>Center View</string>
+        </property>
+       </widget>
+      </item>
+      <item>
        <spacer name="horizontalSpacer_2">
         <property name="orientation">
          <enum>Qt::Horizontal</enum>
