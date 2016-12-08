@@ -28,6 +28,7 @@ public:
 	~vtk_test();
 	vtkSmartPointer<vtkActor> LoadOBJFile(QString const& str, double opacity, double color[3]) const;
 	void Initialize();
+	vtkSmartPointer<vtkActor> LoadSTLFile(QString const & str, double opacity, double color[3]) const;
 	void SetTransformforCI_target(patient_data, Eigen::MatrixXd);
 	void SetTransformforCI_target(Eigen::MatrixXd);
 

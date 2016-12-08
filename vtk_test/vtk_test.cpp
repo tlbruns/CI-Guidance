@@ -16,6 +16,7 @@
 #include <vtkRenderer.h>
 #include <vtkRenderWindow.h>
 #include <vtkOBJReader.h>
+#include <vtkSTLReader.h>
 #include <vtkPolyDataMapper.h>
 #include <Conversions.h>
 #include <vtkTransform.h>
@@ -386,6 +387,7 @@ void vtk_test::Initialize()
 
 	double color3[] = {0.3,0.3,1};
 	vtkSmartPointer<vtkActor> pActor_probe = LoadOBJFile(QString::fromLocal8Bit("D:\\Trevor\\My Documents\\Code\\VTKtest\\vtk_test\\x64\\Release\\polaris_probe.obj"), 1.0, color3);
+	//vtkSmartPointer<vtkActor> pActor_probe = LoadSTLFile(QString::fromLocal8Bit("C:\\Users\\wirzgor\\Source\\Repos\\CI-Guidance\\x64\\Debug\\patient.stl"), 1.0, color3);
 	m_pRenderer_oblique->AddActor(pActor_probe);
 	m_pRenderer_top->AddActor(pActor_probe);
 	m_pRenderer_front->AddActor(pActor_probe);
@@ -412,6 +414,37 @@ vtkSmartPointer<vtkActor> vtk_test::LoadOBJFile(QString const& str,double opacit
 
 	vtkPolyDataMapper *mapper = vtkPolyDataMapper::New();
 	mapper->SetInputConnection( stripper->GetOutputPort() );
+	mapper->ReleaseDataFlagOn();
+
+	vtkSmartPointer<vtkActor> pActor = vtkSmartPointer<vtkActor>::New();
+	//m_pActor = vtkActor::New();
+	pActor->GetProperty()->SetOpacity(opacity);
+	pActor->GetProperty()->SetColor(color);
+	pActor->SetMapper(mapper);
+
+	reader->Delete();
+	mapper->Delete();
+	tris->Delete();
+	stripper->Delete();
+
+	return pActor;
+}
+
+vtkSmartPointer<vtkActor> vtk_test::LoadSTLFile(QString const& str, double opacity, double color[3]) const
+{
+	vtkSTLReader *reader = vtkSTLReader::New();
+	reader->SetFileName(str.toLocal8Bit().data());
+
+	vtkTriangleFilter *tris = vtkTriangleFilter::New();
+	tris->SetInputConnection(reader->GetOutputPort());
+	tris->GetOutput()->GlobalReleaseDataFlagOn();
+
+	vtkStripper *stripper = vtkStripper::New();
+	stripper->SetInputConnection(tris->GetOutputPort());
+	stripper->GetOutput()->GlobalReleaseDataFlagOn();
+
+	vtkPolyDataMapper *mapper = vtkPolyDataMapper::New();
+	mapper->SetInputConnection(stripper->GetOutputPort());
 	mapper->ReleaseDataFlagOn();
 
 	vtkSmartPointer<vtkActor> pActor = vtkSmartPointer<vtkActor>::New();
