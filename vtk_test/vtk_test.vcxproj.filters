@@ -104,6 +104,15 @@
     <ClCompile Include="GeneratedFiles\Release\moc_patient_reg_widget.cpp">
       <Filter>Generated Files\Release</Filter>
     </ClCompile>
+    <ClCompile Include="demo_widget.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="GeneratedFiles\Debug\moc_demo_widget.cpp">
+      <Filter>Generated Files\Debug</Filter>
+    </ClCompile>
+    <ClCompile Include="GeneratedFiles\Release\moc_demo_widget.cpp">
+      <Filter>Generated Files\Release</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <CustomBuild Include="vtk_test.h">
@@ -128,6 +137,12 @@
       <Filter>Form Files</Filter>
     </CustomBuild>
     <CustomBuild Include="patient_reg_widget.h">
+      <Filter>Header Files</Filter>
+    </CustomBuild>
+    <CustomBuild Include="Demo.ui">
+      <Filter>Form Files</Filter>
+    </CustomBuild>
+    <CustomBuild Include="demo_widget.h">
       <Filter>Header Files</Filter>
     </CustomBuild>
   </ItemGroup>
@@ -173,6 +188,9 @@
     </ClInclude>
     <ClInclude Include="patient_data.h">
       <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="GeneratedFiles\ui_Demo.h">
+      <Filter>Generated Files</Filter>
     </ClInclude>
   </ItemGroup>
 </Project>

@@ -1,5 +1,6 @@
 #include "vtk_test.h"
 #include "patient_reg_widget.h"
+#include "demo_widget.h"
 
  #include <vtkAutoInit.h>
  VTK_MODULE_INIT(vtkRenderingOpenGL);
@@ -8,10 +9,14 @@
 #include <qscreen.h>
 #include <QVTKWidget.h>
 #include <qfiledialog.h>
+#include <qfile.h>
+#include <qdatetime.h>
+#include <qtextstream.h>
 #include <vtkCamera.h>
 #include <vtkRenderer.h>
 #include <vtkRenderWindow.h>
 #include <vtkOBJReader.h>
+#include <vtkSTLReader.h>
 #include <vtkPolyDataMapper.h>
 #include <Conversions.h>
 #include <vtkTransform.h>
@@ -46,8 +51,12 @@ vtk_test::vtk_test(QWidget *parent)
 	: QMainWindow(parent),
 	 m_time(0),
 	 m_tracker(TRACKER_COMPORT),
-	 m_frames(0)
+	 m_frames(0),
+	 flag_SetTarget(FALSE)
 {
+	pDemo_Widget = NULL;
+	pDatalogFile = NULL;
+
 	ui.setupUi(this);
 	
 	double dpi = QApplication::screens().at(0)->physicalDotsPerInch();
@@ -135,6 +144,8 @@ vtk_test::vtk_test(QWidget *parent)
 	m_tracker.StartTracking();
 		
 	connect(ui.actionRegister_Patient, SIGNAL(triggered()),this, SLOT(slot_Register_Patient()));
+	connect(ui.actionTracker_Setup, SIGNAL(triggered()), this, SLOT(slot_Tracker_Setup()));
+	connect(ui.actionDemo, SIGNAL(triggered()), this, SLOT(slot_Demo()));
 	connect(this, SIGNAL(sgn_NewProbePosition(double,double,double)), iw, SLOT(slot_NewProbePosition(double,double,double)));
 	connect(this, SIGNAL(sgn_NewCIPosition(double,double,double)), iw, SLOT(slot_NewCIPosition(double,double,double)));
 	connect(this, SIGNAL(sgn_NewMagPosition(double,double,double)), iw, SLOT(slot_NewMagPosition(double,double,double)));
@@ -144,10 +155,17 @@ vtk_test::vtk_test(QWidget *parent)
 }
 
 
-
 vtk_test::~vtk_test()
 {
+	// stop tracker
 	m_tracker.StopTracking();
+	
+	// Close file
+	if(pDatalogFile != NULL){
+		if(pDatalogFile->isOpen()){
+			pDatalogFile->close();
+		}
+	}
 }
 
 void vtk_test::resizeEvent(QResizeEvent *event)
@@ -253,6 +271,20 @@ void vtk_test::slot_onGUITimer()
 		emit sgn_err(tip_err, 5);
 	}
 
+	if(flag_SetTarget)
+	{
+		// set current CI tool position as the target (CI_entry)
+		Eigen::RowVectorXd temp(3);
+		temp <<	Trans_final[2](3,0), Trans_final[2](3,1), Trans_final[2](3,2);
+		CI_entry = temp;
+
+		// update target actor
+		m_pActor_CItarget->SetUserTransform(pvtk_T_CItool);
+
+		// reset flag
+		flag_SetTarget = FALSE;
+	}
+
 	emit sgn_NewProbePosition( Trans_final[1](3,0), Trans_final[1](3,1), Trans_final[1](3,2) );
 	emit sgn_NewCIPosition( Trans_final[2](3,0), Trans_final[2](3,1), Trans_final[2](3,2) );
 	m_frames++;
@@ -262,8 +294,8 @@ void vtk_test::Update_err(std::vector<ToolInformationStruct> const& tools)
 {
 	if (CI_entry.rows() > 0)	// check if value has been set (via registration)
 	{
-		double tip_err = sqrt( pow((-tools[2].y - (CI_entry(0,0))),2) + 
-							   pow((-tools[2].x - (CI_entry(0,1))),2) +
+		double tip_err = sqrt( pow((-tools[2].y - (CI_entry(0,0))),2) + // originally this was tools[2].y
+							   pow((-tools[2].x - (CI_entry(0,1))),2) + // originally this was tools[2].x
 							   pow((-tools[2].z - (CI_entry(0,2))),2) );
 		emit sgn_err(tip_err, 100);
 	}
@@ -328,6 +360,14 @@ void vtk_test::SetTransformforCI_target(patient_data ref_patient_data, Eigen::Ma
 	m_pActor_CItarget->SetUserTransform( vtkT_CI );
 }
 
+void vtk_test::SetTransformforCI_target(Eigen::MatrixXd T_target)
+{
+	vtkSmartPointer<vtkTransform> vtkT_CI = vtkSmartPointer<vtkTransform>::New();
+	vtkT_CI->SetMatrix(T_target.data());
+	m_pActor_CItarget->SetUserTransform( vtkT_CI );
+}
+
+
 void vtk_test::Initialize()
 {	
 	double color1[] = {0.8,0.3,0.3};
@@ -347,6 +387,7 @@ void vtk_test::Initialize()
 
 	double color3[] = {0.3,0.3,1};
 	vtkSmartPointer<vtkActor> pActor_probe = LoadOBJFile(QString::fromLocal8Bit("D:\\Trevor\\My Documents\\Code\\VTKtest\\vtk_test\\x64\\Release\\polaris_probe.obj"), 1.0, color3);
+	//vtkSmartPointer<vtkActor> pActor_probe = LoadSTLFile(QString::fromLocal8Bit("C:\\Users\\wirzgor\\Source\\Repos\\CI-Guidance\\x64\\Debug\\patient.stl"), 1.0, color3);
 	m_pRenderer_oblique->AddActor(pActor_probe);
 	m_pRenderer_top->AddActor(pActor_probe);
 	m_pRenderer_front->AddActor(pActor_probe);
@@ -389,6 +430,37 @@ vtkSmartPointer<vtkActor> vtk_test::LoadOBJFile(QString const& str,double opacit
 	return pActor;
 }
 
+vtkSmartPointer<vtkActor> vtk_test::LoadSTLFile(QString const& str, double opacity, double color[3]) const
+{
+	vtkSTLReader *reader = vtkSTLReader::New();
+	reader->SetFileName(str.toLocal8Bit().data());
+
+	vtkTriangleFilter *tris = vtkTriangleFilter::New();
+	tris->SetInputConnection(reader->GetOutputPort());
+	tris->GetOutput()->GlobalReleaseDataFlagOn();
+
+	vtkStripper *stripper = vtkStripper::New();
+	stripper->SetInputConnection(tris->GetOutputPort());
+	stripper->GetOutput()->GlobalReleaseDataFlagOn();
+
+	vtkPolyDataMapper *mapper = vtkPolyDataMapper::New();
+	mapper->SetInputConnection(stripper->GetOutputPort());
+	mapper->ReleaseDataFlagOn();
+
+	vtkSmartPointer<vtkActor> pActor = vtkSmartPointer<vtkActor>::New();
+	//m_pActor = vtkActor::New();
+	pActor->GetProperty()->SetOpacity(opacity);
+	pActor->GetProperty()->SetColor(color);
+	pActor->SetMapper(mapper);
+
+	reader->Delete();
+	mapper->Delete();
+	tris->Delete();
+	stripper->Delete();
+
+	return pActor;
+}
+
 void vtk_test::slot_Register_Patient()
 {
 	// TO DO: insert pop up file browser to select patient data
@@ -409,3 +481,85 @@ void vtk_test::slot_Register_Patient()
 	//m_pRenderer_front->AddActor(m_pActor_CItarget);
 	//m_pRenderer_side->AddActor(m_pActor_CItarget);
 }
+
+void vtk_test::slot_Tracker_Setup()
+{
+}
+
+void vtk_test::slot_Demo()
+{
+	// ensure we are not creating duplicates
+	if(pDemo_Widget != NULL)
+	{
+		delete pDemo_Widget;
+	}
+	pDemo_Widget = new Demo_Widget();
+
+	// connect signals from Demo_Widget to slots in vtk_test
+	connect(pDemo_Widget, SIGNAL(sgn_SetTarget()),	  this, SLOT(slot_SetTarget()));
+	connect(pDemo_Widget, SIGNAL(sgn_DatalogStart()), this, SLOT(slot_DatalogStart()));
+	connect(pDemo_Widget, SIGNAL(sgn_DatalogStop()),  this, SLOT(slot_DatalogStop()));
+
+	// open dialog
+	pDemo_Widget->exec();
+}
+
+void vtk_test::slot_SetTarget()
+{
+	flag_SetTarget = TRUE;
+}
+
+void vtk_test::slot_DatalogStart()
+{
+	// create time-stamped filename
+	QString filename = QDate::currentDate().toString("yyyy-MM-dd");
+	QString time = QTime::currentTime().toString("_hh-mm");
+	filename.append(time);
+	filename.append(QString(".csv"));
+
+	// open file
+	pDatalogFile = new QFile(filename);
+	pDatalogFile->open(QIODevice::WriteOnly);
+
+	// ensure file opened ok
+	if(!pDatalogFile->isOpen()){
+		cout << "Error opening file";
+		return;
+	}
+
+	// write header
+	QTextStream datalogStream(pDatalogFile);
+	datalogStream << "elapsed time [ms], error [mm]\n";
+	
+	// start timer
+	m_datalogTimer.start();
+
+	// enable datalogging
+	connect(this, SIGNAL(sgn_err(double,double)), this, SLOT(slot_WriteData(double,double)));
+
+	// Note: file is automatically closed when program is terminated
+}
+
+void vtk_test::slot_DatalogStop()
+{
+	// stop datalogging
+	disconnect(this, SIGNAL(sgn_err(double,double)), this, SLOT(slot_WriteData(double,double)));
+
+	// close file
+	if(pDatalogFile != NULL){
+		if(pDatalogFile->isOpen()){
+			pDatalogFile->close();
+		}
+	}
+}
+
+void vtk_test::slot_WriteData(double err_ci, double err_mag)
+{
+	// write next line
+	QTextStream datalogStream(pDatalogFile);
+	datalogStream << QString::number(m_datalogTimer.elapsed()) << ", " << QString::number(err_ci) << endl;
+
+	// restart timer
+	//m_datalogTimer.restart();
+}
+

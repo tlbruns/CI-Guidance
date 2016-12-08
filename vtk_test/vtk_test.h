@@ -4,7 +4,9 @@
 #include <QtWidgets/QMainWindow>
 #include "ui_vtk_test.h"
 #include <qtimer.h>
+#include <qelapsedtimer.h>
 #include <qlabel.h>
+#include <qfile.h>
 #include "Tracker.h"
 #include <vtkActor.h>
 #include <Conversions.h>
@@ -12,6 +14,7 @@
 #include <vtkSmartPointer.h>
 #include <Eigen/Dense>
 #include <patient_data.h>
+#include "demo_widget.h"
 
 class vtkRenderer;
 class QVTKWidget;
@@ -25,15 +28,25 @@ public:
 	~vtk_test();
 	vtkSmartPointer<vtkActor> LoadOBJFile(QString const& str, double opacity, double color[3]) const;
 	void Initialize();
+	vtkSmartPointer<vtkActor> LoadSTLFile(QString const & str, double opacity, double color[3]) const;
 	void SetTransformforCI_target(patient_data, Eigen::MatrixXd);
+	void SetTransformforCI_target(Eigen::MatrixXd);
 
+protected:
+	Demo_Widget *pDemo_Widget;
 
 protected slots:
 	void slot_onGUITimer();
 	void slot_Register_Patient();
+	void slot_Tracker_Setup();
+	void slot_SetTarget();
 	void slot_onFrameRateTimer();
 	void resizeEvent(QResizeEvent *event);
 	void slot_onRegistration(Eigen::MatrixXd);
+	void slot_Demo();
+	void slot_DatalogStart();
+	void slot_DatalogStop();
+	void slot_WriteData(double,double);
 
 signals:
 	void sgn_NewProbePosition(double,double,double);
@@ -45,6 +58,7 @@ private:
 	Ui::vtk_testClass ui;
 	QTimer			  m_timer;
 	QTimer			  m_frameRateTimer;
+	QElapsedTimer	  m_datalogTimer;
 	int				  m_frames;
 	QLabel			  m_statusLabel;
 	QLabel			  m_frameRateLabel;
@@ -52,6 +66,7 @@ private:
 	QVTKWidget        *m_pQVTK_oblique;
 	QVTKWidget        *m_pQVTK_front;
 	QVTKWidget        *m_pQVTK_side;
+	QFile			  *pDatalogFile;
 	int				  m_time;
 	vtkRenderer       *m_pRenderer_oblique;
 	vtkRenderer		  *m_pRenderer_top;
@@ -63,6 +78,7 @@ private:
 	vtkSmartPointer<vtkActor>		  m_pActor_CItarget;
 	RotationMatrix	  dtRotMatrix;
 	Eigen::MatrixXd	  CI_entry;
+	bool			  flag_SetTarget;
 	void Update_err(std::vector<ToolInformationStruct> const& tools);
 };
 
