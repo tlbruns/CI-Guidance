@@ -68,10 +68,10 @@ private:
 	QVTKWidget        *m_pQVTK_side;
 	QFile			  *pDatalogFile;
 	int				  m_time;
-	vtkRenderer       *m_pRenderer_oblique;
-	vtkRenderer		  *m_pRenderer_top;
-	vtkRenderer		  *m_pRenderer_front;
-	vtkRenderer		  *m_pRenderer_side;
+	vtkSmartPointer<vtkRenderer>    m_pRenderer_oblique;
+	vtkSmartPointer<vtkRenderer>	m_pRenderer_top;
+	vtkSmartPointer<vtkRenderer>	m_pRenderer_front;
+	vtkSmartPointer<vtkRenderer>	m_pRenderer_side;
 	NDIAuroraTracker  m_tracker;
 	vtkSmartPointer<vtkActor>		  m_pActor_probe;
 	vtkSmartPointer<vtkActor>		  m_pActor_CItool;
