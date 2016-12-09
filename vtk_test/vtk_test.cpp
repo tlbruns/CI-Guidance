@@ -172,7 +172,6 @@ void vtk_test::resizeEvent(QResizeEvent *event)
 {
 	QWidget::resizeEvent(event);
 	m_frameRateLabel.setGeometry( m_pQVTK_top->geometry() );
-
 }
 
 void vtk_test::slot_onFrameRateTimer()
@@ -190,11 +189,6 @@ void vtk_test::slot_onRegistration(Eigen::MatrixXd T)
 void vtk_test::slot_onGUITimer()
 {
 	// declare variables	
-	//std::vector<Eigen::Quaterniond, Eigen::aligned_allocator<Eigen::Quaterniond> > quat_Polaris;
-	//std::vector<Eigen::Vector3d, Eigen::aligned_allocator<Eigen::Vector3d> > p;
-	//std::vector<Eigen::Matrix3d, Eigen::aligned_allocator<Eigen::Matrix3d> > R; 
-	//std::vector<Eigen::Matrix4d, Eigen::aligned_allocator<Eigen::Matrix4d> > T;
-	//std::vector<Eigen::Matrix4d, Eigen::aligned_allocator<Eigen::Matrix4d> > Trans_final;
 	boost::ptr_vector< Eigen::Quaterniond > quat_Polaris;
 	boost::ptr_vector< Eigen::Vector3d > p;
 	boost::ptr_vector< Eigen::Matrix3d> R;
@@ -253,11 +247,6 @@ void vtk_test::slot_onGUITimer()
 	m_pActor_probe->SetUserTransform(pvtk_T_probe);
 	m_pActor_CItool->SetUserTransform(pvtk_T_CItool);
 
-	//m_pRenderer_oblique->ResetCameraClippingRange();
-	//m_pRenderer_top->ResetCameraClippingRange();
-	//m_pRenderer_front->ResetCameraClippingRange();
-	//m_pRenderer_side->ResetCameraClippingRange();
-
 	m_pQVTK_top->update();
 	m_pQVTK_oblique->update();
 	m_pQVTK_front->update();
@@ -294,8 +283,8 @@ void vtk_test::Update_err(std::vector<ToolInformationStruct> const& tools)
 {
 	if (CI_entry.rows() > 0)	// check if value has been set (via registration)
 	{
-		double tip_err = sqrt( pow((-tools[2].y - (CI_entry(0,0))),2) + // originally this was tools[2].y
-							   pow((-tools[2].x - (CI_entry(0,1))),2) + // originally this was tools[2].x
+		double tip_err = sqrt( pow((-tools[2].y - (CI_entry(0,0))),2) + // x & y swapped due to tracker frame
+							   pow((-tools[2].x - (CI_entry(0,1))),2) +
 							   pow((-tools[2].z - (CI_entry(0,2))),2) );
 		emit sgn_err(tip_err, 100);
 	}
