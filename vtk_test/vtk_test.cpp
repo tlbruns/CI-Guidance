@@ -38,7 +38,7 @@
 #endif
 
 #define	 TRACKER_SIMULATE		0		// 1 for simulate, 0 if using tracker
-#define  TRACKER_COMPORT		7		// NOTE: COM port is zero-indexed (N-1)
+#define  TRACKER_COMPORT		2		// NOTE: COM port is zero-indexed (N-1)
 #define	 PROBE_DESIRED_X		-79.3	// fixed position to use as the target pose
 #define	 PROBE_DESIRED_Y		-376.8	
 #define	 PROBE_DESIRED_Z		1451.95
@@ -77,10 +77,10 @@ vtk_test::vtk_test(QWidget *parent)
 	m_pQVTK_side = new QVTKWidget(this);
 	ui.gridlayout->addWidget(m_pQVTK_side,1,2,1,1,0);
 
-	m_pRenderer_oblique = vtkRenderer::New();
-	m_pRenderer_top = vtkRenderer::New();
-	m_pRenderer_front = vtkRenderer::New();
-	m_pRenderer_side = vtkRenderer::New();
+	m_pRenderer_oblique = vtkSmartPointer<vtkRenderer>::New();
+	m_pRenderer_top = vtkSmartPointer<vtkRenderer>::New();
+	m_pRenderer_front = vtkSmartPointer<vtkRenderer>::New();
+	m_pRenderer_side = vtkSmartPointer<vtkRenderer>::New();
 
 	m_pQVTK_top->setMinimumSize( (int)(3*dpi), (int)(3*dpi) );
 	m_pQVTK_top->GetRenderWindow()->AddRenderer(m_pRenderer_top);
@@ -125,10 +125,10 @@ vtk_test::vtk_test(QWidget *parent)
 	camera_side->SetClippingRange(10.0,10000.0);
 	m_pRenderer_side->SetActiveCamera(camera_side);
 
-	m_pRenderer_oblique->Delete();
+	/*m_pRenderer_oblique->Delete();
 	m_pRenderer_top->Delete();
 	m_pRenderer_front->Delete();
-	m_pRenderer_side->Delete();
+	m_pRenderer_side->Delete();*/
 
 	m_timer.setInterval(0);
 	m_timer.setSingleShot(false);
@@ -401,49 +401,18 @@ void vtk_test::Initialize()
 
 vtkSmartPointer<vtkActor> vtk_test::LoadOBJFile(QString const& str,double opacity, double color[3]) const
 {
-	vtkOBJReader *reader = vtkOBJReader::New();
+	vtkSmartPointer<vtkOBJReader> reader = vtkSmartPointer<vtkOBJReader>::New();
 	reader->SetFileName( str.toLocal8Bit().data() );
 	
-	vtkTriangleFilter *tris = vtkTriangleFilter::New();
-	tris->SetInputConnection( reader->GetOutputPort() );
-	tris->GetOutput()->GlobalReleaseDataFlagOn();
-
-	vtkStripper *stripper = vtkStripper::New();
-	stripper->SetInputConnection( tris->GetOutputPort() );
-	stripper->GetOutput()->GlobalReleaseDataFlagOn();
-
-	vtkPolyDataMapper *mapper = vtkPolyDataMapper::New();
-	mapper->SetInputConnection( stripper->GetOutputPort() );
-	mapper->ReleaseDataFlagOn();
-
-	vtkSmartPointer<vtkActor> pActor = vtkSmartPointer<vtkActor>::New();
-	//m_pActor = vtkActor::New();
-	pActor->GetProperty()->SetOpacity(opacity);
-	pActor->GetProperty()->SetColor(color);
-	pActor->SetMapper(mapper);
-
-	reader->Delete();
-	mapper->Delete();
-	tris->Delete();
-	stripper->Delete();
-
-	return pActor;
-}
-
-vtkSmartPointer<vtkActor> vtk_test::LoadSTLFile(QString const& str, double opacity, double color[3]) const
-{
-	vtkSTLReader *reader = vtkSTLReader::New();
-	reader->SetFileName(str.toLocal8Bit().data());
-
-	vtkTriangleFilter *tris = vtkTriangleFilter::New();
+	vtkSmartPointer<vtkTriangleFilter> tris = vtkSmartPointer<vtkTriangleFilter>::New();
 	tris->SetInputConnection(reader->GetOutputPort());
 	tris->GetOutput()->GlobalReleaseDataFlagOn();
 
-	vtkStripper *stripper = vtkStripper::New();
+	vtkSmartPointer<vtkStripper> stripper = vtkSmartPointer<vtkStripper>::New();
 	stripper->SetInputConnection(tris->GetOutputPort());
 	stripper->GetOutput()->GlobalReleaseDataFlagOn();
 
-	vtkPolyDataMapper *mapper = vtkPolyDataMapper::New();
+	vtkSmartPointer<vtkPolyDataMapper> mapper = vtkSmartPointer<vtkPolyDataMapper>::New();
 	mapper->SetInputConnection(stripper->GetOutputPort());
 	mapper->ReleaseDataFlagOn();
 
@@ -453,10 +422,31 @@ vtkSmartPointer<vtkActor> vtk_test::LoadSTLFile(QString const& str, double opaci
 	pActor->GetProperty()->SetColor(color);
 	pActor->SetMapper(mapper);
 
-	reader->Delete();
-	mapper->Delete();
-	tris->Delete();
-	stripper->Delete();
+	return pActor;
+}
+
+vtkSmartPointer<vtkActor> vtk_test::LoadSTLFile(QString const& str, double opacity, double color[3]) const
+{
+	vtkSmartPointer<vtkSTLReader> reader = vtkSmartPointer<vtkSTLReader>::New();
+	reader->SetFileName(str.toLocal8Bit().data());
+
+	vtkSmartPointer<vtkTriangleFilter> tris = vtkSmartPointer<vtkTriangleFilter>::New();
+	tris->SetInputConnection(reader->GetOutputPort());
+	tris->GetOutput()->GlobalReleaseDataFlagOn();
+
+	vtkSmartPointer<vtkStripper> stripper = vtkSmartPointer<vtkStripper>::New();
+	stripper->SetInputConnection(tris->GetOutputPort());
+	stripper->GetOutput()->GlobalReleaseDataFlagOn();
+
+	vtkSmartPointer<vtkPolyDataMapper> mapper = vtkSmartPointer<vtkPolyDataMapper>::New();
+	mapper->SetInputConnection(stripper->GetOutputPort());
+	mapper->ReleaseDataFlagOn();
+
+	vtkSmartPointer<vtkActor> pActor = vtkSmartPointer<vtkActor>::New();
+	//m_pActor = vtkActor::New();
+	pActor->GetProperty()->SetOpacity(opacity);
+	pActor->GetProperty()->SetColor(color);
+	pActor->SetMapper(mapper);
 
 	return pActor;
 }
