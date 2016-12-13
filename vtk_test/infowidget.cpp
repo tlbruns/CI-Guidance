@@ -5,6 +5,12 @@ InfoWidget::InfoWidget(QWidget *parent)
 	: QWidget(parent)
 {
 	ui.setupUi(this);
+	ui.button_centerCItool->setObjectName("centerCItool");
+	ui.button_centerProbe->setObjectName("centerProbe");
+
+	connect(ui.button_centerCItool, SIGNAL(clicked()), this, SLOT(slot_CenterView()));
+	connect(ui.button_centerProbe,  SIGNAL(clicked()), this, SLOT(slot_CenterView()));
+
 }
 
 InfoWidget::~InfoWidget()
@@ -75,4 +81,12 @@ void InfoWidget::slot_update_err(double err_ci, double err_mag)
 		QPixmap redX (":/images/Resources/redX_small.png");
 		ui.label_mag_status->setPixmap(redX);
 	}
+}
+
+void InfoWidget::slot_CenterView()
+{
+	QObject *senderObj = sender(); // returns sender object
+	QString senderObjName = senderObj->objectName(); // sender name
+
+	emit sgn_CenterView(senderObjName);
 }

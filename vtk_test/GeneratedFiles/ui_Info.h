@@ -20,6 +20,7 @@
 #include <QtWidgets/QHeaderView>
 #include <QtWidgets/QLabel>
 #include <QtWidgets/QProgressBar>
+#include <QtWidgets/QPushButton>
 #include <QtWidgets/QSpacerItem>
 #include <QtWidgets/QVBoxLayout>
 #include <QtWidgets/QWidget>
@@ -39,6 +40,7 @@ public:
     QLabel *label_probe_y;
     QLabel *label_3;
     QLabel *label_probe_z;
+    QPushButton *button_centerProbe;
     QSpacerItem *horizontalSpacer;
     QGroupBox *CIToolBox;
     QHBoxLayout *horizontalLayout_2;
@@ -49,6 +51,7 @@ public:
     QLabel *label_ci_y;
     QLabel *label_6;
     QLabel *label_ci_z;
+    QPushButton *button_centerCItool;
     QSpacerItem *horizontalSpacer_2;
     QGroupBox *MagnetBox;
     QHBoxLayout *horizontalLayout_3;
@@ -62,17 +65,17 @@ public:
     QSpacerItem *horizontalSpacer_3;
     QGroupBox *ErrorBox;
     QGridLayout *gridLayout;
-    QLabel *label_Magnet_err;
+    QLabel *label_text_Magnet;
     QLabel *label_mag_err;
     QLabel *label_mag_status;
     QSpacerItem *verticalSpacer;
     QProgressBar *progressBar_CI_err;
     QLabel *label_ci_status;
-    QLabel *label_CI_Tool_err;
+    QLabel *label_text_CITool;
     QLabel *label_ci_err;
     QProgressBar *progressBar_mag_err;
-    QLabel *label_10;
-    QLabel *label_11;
+    QLabel *label_text_error2_2;
+    QLabel *label_text_error2;
     QHBoxLayout *Logos;
     QLabel *logo_VUeng;
     QLabel *logo_medlab;
@@ -159,6 +162,12 @@ public:
 
         horizontalLayout->addLayout(formLayout);
 
+        button_centerProbe = new QPushButton(probeBox);
+        button_centerProbe->setObjectName(QStringLiteral("button_centerProbe"));
+        button_centerProbe->setFont(font1);
+
+        horizontalLayout->addWidget(button_centerProbe);
+
         horizontalSpacer = new QSpacerItem(274, 20, QSizePolicy::Expanding, QSizePolicy::Minimum);
 
         horizontalLayout->addItem(horizontalSpacer);
@@ -220,6 +229,12 @@ public:
 
 
         horizontalLayout_2->addLayout(formLayout_2);
+
+        button_centerCItool = new QPushButton(CIToolBox);
+        button_centerCItool->setObjectName(QStringLiteral("button_centerCItool"));
+        button_centerCItool->setFont(font1);
+
+        horizontalLayout_2->addWidget(button_centerCItool);
 
         horizontalSpacer_2 = new QSpacerItem(342, 20, QSizePolicy::Expanding, QSizePolicy::Minimum);
 
@@ -289,11 +304,11 @@ public:
         ErrorBox->setFont(font);
         gridLayout = new QGridLayout(ErrorBox);
         gridLayout->setObjectName(QStringLiteral("gridLayout"));
-        label_Magnet_err = new QLabel(ErrorBox);
-        label_Magnet_err->setObjectName(QStringLiteral("label_Magnet_err"));
-        label_Magnet_err->setFont(font3);
+        label_text_Magnet = new QLabel(ErrorBox);
+        label_text_Magnet->setObjectName(QStringLiteral("label_text_Magnet"));
+        label_text_Magnet->setFont(font3);
 
-        gridLayout->addWidget(label_Magnet_err, 3, 0, 1, 1);
+        gridLayout->addWidget(label_text_Magnet, 3, 0, 1, 1);
 
         label_mag_err = new QLabel(ErrorBox);
         label_mag_err->setObjectName(QStringLiteral("label_mag_err"));
@@ -333,11 +348,11 @@ public:
 
         gridLayout->addWidget(label_ci_status, 0, 3, 1, 1);
 
-        label_CI_Tool_err = new QLabel(ErrorBox);
-        label_CI_Tool_err->setObjectName(QStringLiteral("label_CI_Tool_err"));
-        label_CI_Tool_err->setFont(font3);
+        label_text_CITool = new QLabel(ErrorBox);
+        label_text_CITool->setObjectName(QStringLiteral("label_text_CITool"));
+        label_text_CITool->setFont(font3);
 
-        gridLayout->addWidget(label_CI_Tool_err, 0, 0, 1, 1);
+        gridLayout->addWidget(label_text_CITool, 0, 0, 1, 1);
 
         label_ci_err = new QLabel(ErrorBox);
         label_ci_err->setObjectName(QStringLiteral("label_ci_err"));
@@ -356,24 +371,24 @@ public:
 
         gridLayout->addWidget(progressBar_mag_err, 4, 0, 1, 4);
 
-        label_10 = new QLabel(ErrorBox);
-        label_10->setObjectName(QStringLiteral("label_10"));
+        label_text_error2_2 = new QLabel(ErrorBox);
+        label_text_error2_2->setObjectName(QStringLiteral("label_text_error2_2"));
         QFont font4;
         font4.setPointSize(8);
         font4.setBold(false);
         font4.setItalic(false);
         font4.setWeight(50);
-        label_10->setFont(font4);
-        label_10->setAlignment(Qt::AlignCenter);
+        label_text_error2_2->setFont(font4);
+        label_text_error2_2->setAlignment(Qt::AlignCenter);
 
-        gridLayout->addWidget(label_10, 0, 1, 1, 1);
+        gridLayout->addWidget(label_text_error2_2, 0, 1, 1, 1);
 
-        label_11 = new QLabel(ErrorBox);
-        label_11->setObjectName(QStringLiteral("label_11"));
-        label_11->setFont(font1);
-        label_11->setAlignment(Qt::AlignCenter);
+        label_text_error2 = new QLabel(ErrorBox);
+        label_text_error2->setObjectName(QStringLiteral("label_text_error2"));
+        label_text_error2->setFont(font1);
+        label_text_error2->setAlignment(Qt::AlignCenter);
 
-        gridLayout->addWidget(label_11, 3, 1, 1, 1);
+        gridLayout->addWidget(label_text_error2, 3, 1, 1, 1);
 
 
         verticalLayout->addWidget(ErrorBox);
@@ -418,6 +433,7 @@ public:
         label_probe_y->setText(QApplication::translate("Info", "-0000.00", 0));
         label_3->setText(QApplication::translate("Info", "<b>z</b>", 0));
         label_probe_z->setText(QApplication::translate("Info", "-0000.00", 0));
+        button_centerProbe->setText(QApplication::translate("Info", "Center View", 0));
         CIToolBox->setTitle(QApplication::translate("Info", "CI Tool", 0));
         label_4->setText(QApplication::translate("Info", "<b>x</b>", 0));
         label_ci_x->setText(QApplication::translate("Info", "-0000.00", 0));
@@ -425,6 +441,7 @@ public:
         label_ci_y->setText(QApplication::translate("Info", "-0000.00", 0));
         label_6->setText(QApplication::translate("Info", "<b>z</b>", 0));
         label_ci_z->setText(QApplication::translate("Info", "-0000.00", 0));
+        button_centerCItool->setText(QApplication::translate("Info", "Center View", 0));
         MagnetBox->setTitle(QApplication::translate("Info", "Magnet", 0));
         label_7->setText(QApplication::translate("Info", "<b>x</b>", 0));
         label_mag_x->setText(QApplication::translate("Info", "-0000.00", 0));
@@ -433,16 +450,16 @@ public:
         label_9->setText(QApplication::translate("Info", "<b>z</b>", 0));
         label_mag_z->setText(QApplication::translate("Info", "-0000.00", 0));
         ErrorBox->setTitle(QApplication::translate("Info", "Error", 0));
-        label_Magnet_err->setText(QApplication::translate("Info", "Magnet", 0));
+        label_text_Magnet->setText(QApplication::translate("Info", "Magnet", 0));
         label_mag_err->setText(QApplication::translate("Info", "000.00", 0));
         label_mag_status->setText(QString());
         progressBar_CI_err->setFormat(QString());
         label_ci_status->setText(QString());
-        label_CI_Tool_err->setText(QApplication::translate("Info", "CI Tool", 0));
+        label_text_CITool->setText(QApplication::translate("Info", "CI Tool", 0));
         label_ci_err->setText(QApplication::translate("Info", "000.00", 0));
         progressBar_mag_err->setFormat(QString());
-        label_10->setText(QApplication::translate("Info", "Error =", 0));
-        label_11->setText(QApplication::translate("Info", "Error =", 0));
+        label_text_error2_2->setText(QApplication::translate("Info", "Error =", 0));
+        label_text_error2->setText(QApplication::translate("Info", "Error =", 0));
         logo_VUeng->setText(QString());
         logo_medlab->setText(QString());
     } // retranslateUi

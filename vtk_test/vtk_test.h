@@ -37,6 +37,7 @@ protected:
 
 protected slots:
 	void slot_onGUITimer();
+	void slot_CenterView(QString);
 	void slot_Register_Patient();
 	void slot_Tracker_Setup();
 	void slot_SetTarget();

@@ -103,26 +103,26 @@ vtk_test::vtk_test(QWidget *parent)
 	m_pRenderer_front->SetGradientBackground(true);
 	m_pRenderer_side->SetGradientBackground(true);
 
-		// Set camera views
-	vtkSmartPointer<vtkCamera> camera_top = vtkSmartPointer<vtkCamera>::New();
-	camera_top->SetPosition(0,100,1575);
-	camera_top->SetFocalPoint(0,-300,1575);
+	// Set camera views
+	vtkSmartPointer<vtkCamera> camera_top = vtkSmartPointer<vtkCamera>::New(); // XZ Plane
+	camera_top->SetPosition(0,100,0);
+	camera_top->SetFocalPoint(0,0,0);
 	camera_top->SetViewUp(0,0,-1);
-	camera_top->SetClippingRange(10.0,10000.0);
+	camera_top->SetClippingRange(-1000,1000); // based on tracker workspace limits in x
 	m_pRenderer_top->SetActiveCamera(camera_top);
 
-	vtkSmartPointer<vtkCamera> camera_front = vtkSmartPointer<vtkCamera>::New();
-	camera_front->SetPosition(0,-250,2200);
-	camera_front->SetFocalPoint(0,-250,1700);
+	vtkSmartPointer<vtkCamera> camera_front = vtkSmartPointer<vtkCamera>::New(); // XY Plane
+	camera_front->SetPosition(0,0,500);
+	camera_front->SetFocalPoint(0,0,0);
 	camera_front->SetViewUp(0,1,0);
-	camera_front->SetClippingRange(10.0,10000.0);
+	camera_front->SetClippingRange(-100,3500); // based on tracker workspace limits in z
 	m_pRenderer_front->SetActiveCamera(camera_front);
 
-	vtkSmartPointer<vtkCamera> camera_side = vtkSmartPointer<vtkCamera>::New();
-	camera_side->SetPosition(800,-250,1575);
-	camera_side->SetFocalPoint(200,-250,1575);
+	vtkSmartPointer<vtkCamera> camera_side = vtkSmartPointer<vtkCamera>::New(); // YZ Plane
+	camera_side->SetPosition(500,0,0);
+	camera_side->SetFocalPoint(0,0,0);
 	camera_side->SetViewUp(0,1,0);
-	camera_side->SetClippingRange(10.0,10000.0);
+	camera_side->SetClippingRange(-1000,1000); // based on tracker workspace limits in y
 	m_pRenderer_side->SetActiveCamera(camera_side);
 
 	/*m_pRenderer_oblique->Delete();
@@ -149,6 +149,7 @@ vtk_test::vtk_test(QWidget *parent)
 	connect(this, SIGNAL(sgn_NewProbePosition(double,double,double)), iw, SLOT(slot_NewProbePosition(double,double,double)));
 	connect(this, SIGNAL(sgn_NewCIPosition(double,double,double)), iw, SLOT(slot_NewCIPosition(double,double,double)));
 	connect(this, SIGNAL(sgn_NewMagPosition(double,double,double)), iw, SLOT(slot_NewMagPosition(double,double,double)));
+	connect(iw, SIGNAL(sgn_CenterView(QString)), this, SLOT(slot_CenterView(QString)));
 	connect(this, SIGNAL(sgn_err(double,double)), iw, SLOT(slot_update_err(double,double)));
 	
 	ui.statusBar->addWidget( &m_frameRateLabel );
@@ -168,6 +169,38 @@ vtk_test::~vtk_test()
 	}
 }
 
+void vtk_test::Initialize()
+{
+	double color1[] = { 0.8,0.3,0.3 };
+	vtkSmartPointer<vtkActor> pActor_CI_target = LoadOBJFile(QString::fromLocal8Bit("D:\\Trevor\\My Documents\\Code\\VTKtest\\vtk_test\\x64\\Release\\insertion_tool_wtarget.obj"), 0.3, color1);
+	//SetTransformForCI_target(pActor_CI_target);
+	m_pRenderer_oblique->AddActor(pActor_CI_target);
+	m_pRenderer_top->AddActor(pActor_CI_target);
+	m_pRenderer_front->AddActor(pActor_CI_target);
+	m_pRenderer_side->AddActor(pActor_CI_target);
+
+	double color2[] = { 0.3,1.0,0.3 };
+	vtkSmartPointer<vtkActor> pActor_CI_tool = LoadOBJFile(QString::fromLocal8Bit("D:\\Trevor\\My Documents\\Code\\VTKtest\\vtk_test\\x64\\Release\\insertion_tool_wtarget.obj"), 1.0, color2);
+	m_pRenderer_oblique->AddActor(pActor_CI_tool);
+	m_pRenderer_top->AddActor(pActor_CI_tool);
+	m_pRenderer_side->AddActor(pActor_CI_tool);
+	m_pRenderer_front->AddActor(pActor_CI_tool);
+
+	double color3[] = { 0.3,0.3,1 };
+	vtkSmartPointer<vtkActor> pActor_probe = LoadOBJFile(QString::fromLocal8Bit("D:\\Trevor\\My Documents\\Code\\VTKtest\\vtk_test\\x64\\Release\\polaris_probe.obj"), 1.0, color3);
+	//vtkSmartPointer<vtkActor> pActor_probe = LoadSTLFile(QString::fromLocal8Bit("C:\\Users\\wirzgor\\Source\\Repos\\CI-Guidance\\x64\\Debug\\patient.stl"), 1.0, color3);
+	m_pRenderer_oblique->AddActor(pActor_probe);
+	m_pRenderer_top->AddActor(pActor_probe);
+	m_pRenderer_front->AddActor(pActor_probe);
+	m_pRenderer_side->AddActor(pActor_probe);
+
+	m_pActor_CItarget = pActor_CI_target;
+	m_pActor_CItool = pActor_CI_tool;
+	m_pActor_probe = pActor_probe;
+
+	slot_CenterView(QString("centerCItool"));
+}
+
 void vtk_test::resizeEvent(QResizeEvent *event)
 {
 	QWidget::resizeEvent(event);
@@ -184,6 +217,37 @@ void vtk_test::slot_onFrameRateTimer()
 void vtk_test::slot_onRegistration(Eigen::MatrixXd T)
 {
 	std::cout << T << std::endl;
+}
+
+void vtk_test::slot_CenterView(QString senderObjName)
+{
+	if (senderObjName == "centerCItool")
+	{
+		m_pRenderer_front->ResetCamera(m_pActor_CItool->GetBounds());
+		m_pRenderer_top->ResetCamera(m_pActor_CItool->GetBounds());
+		m_pRenderer_side->ResetCamera(m_pActor_CItool->GetBounds());
+		m_pRenderer_oblique->ResetCamera(m_pActor_CItool->GetBounds());
+	}
+	else if (senderObjName == "centerProbe")
+	{
+		m_pRenderer_front->ResetCamera(m_pActor_probe->GetBounds());
+		m_pRenderer_top->ResetCamera(m_pActor_probe->GetBounds());
+		m_pRenderer_side->ResetCamera(m_pActor_probe->GetBounds());
+		m_pRenderer_oblique->ResetCamera(m_pActor_probe->GetBounds());
+	}
+	else if (senderObjName == "centerCItarget")
+	{
+		m_pRenderer_front->ResetCamera(m_pActor_CItarget->GetBounds());
+		m_pRenderer_top->ResetCamera(m_pActor_CItarget->GetBounds());
+		m_pRenderer_side->ResetCamera(m_pActor_CItarget->GetBounds());
+		m_pRenderer_oblique->ResetCamera(m_pActor_CItarget->GetBounds());
+	}
+	else
+	{
+		return; // no match for sender name
+	}
+
+	
 }
 
 void vtk_test::slot_onGUITimer()
@@ -355,38 +419,6 @@ void vtk_test::SetTransformforCI_target(Eigen::MatrixXd T_target)
 	vtkT_CI->SetMatrix(T_target.data());
 	m_pActor_CItarget->SetUserTransform( vtkT_CI );
 }
-
-
-void vtk_test::Initialize()
-{	
-	double color1[] = {0.8,0.3,0.3};
-	vtkSmartPointer<vtkActor> pActor_CI_target = LoadOBJFile(QString::fromLocal8Bit("D:\\Trevor\\My Documents\\Code\\VTKtest\\vtk_test\\x64\\Release\\insertion_tool_wtarget.obj"), 0.3, color1);
-	//SetTransformForCI_target(pActor_CI_target);
-	m_pRenderer_oblique->AddActor(pActor_CI_target);
-	m_pRenderer_top->AddActor(pActor_CI_target);
-	m_pRenderer_front->AddActor(pActor_CI_target);
-	m_pRenderer_side->AddActor(pActor_CI_target);
-
-	double color2[] = {0.3,1.0,0.3};
-	vtkSmartPointer<vtkActor> pActor_CI_tool = LoadOBJFile(QString::fromLocal8Bit("D:\\Trevor\\My Documents\\Code\\VTKtest\\vtk_test\\x64\\Release\\insertion_tool_wtarget.obj"), 1.0, color2);
-	m_pRenderer_oblique->AddActor(pActor_CI_tool);
-	m_pRenderer_top->AddActor(pActor_CI_tool);
-	m_pRenderer_side->AddActor(pActor_CI_tool);
-	m_pRenderer_front->AddActor(pActor_CI_tool);
-
-	double color3[] = {0.3,0.3,1};
-	vtkSmartPointer<vtkActor> pActor_probe = LoadOBJFile(QString::fromLocal8Bit("D:\\Trevor\\My Documents\\Code\\VTKtest\\vtk_test\\x64\\Release\\polaris_probe.obj"), 1.0, color3);
-	//vtkSmartPointer<vtkActor> pActor_probe = LoadSTLFile(QString::fromLocal8Bit("C:\\Users\\wirzgor\\Source\\Repos\\CI-Guidance\\x64\\Debug\\patient.stl"), 1.0, color3);
-	m_pRenderer_oblique->AddActor(pActor_probe);
-	m_pRenderer_top->AddActor(pActor_probe);
-	m_pRenderer_front->AddActor(pActor_probe);
-	m_pRenderer_side->AddActor(pActor_probe);
-
-	m_pActor_CItarget = pActor_CI_target;
-	m_pActor_CItool = pActor_CI_tool;
-	m_pActor_probe = pActor_probe;
-}
-
 
 vtkSmartPointer<vtkActor> vtk_test::LoadOBJFile(QString const& str,double opacity, double color[3]) const
 {
