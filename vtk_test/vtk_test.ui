@@ -50,7 +50,6 @@
     </property>
     <addaction name="actionTracker_Setup"/>
     <addaction name="actionRegister_Patient"/>
-    <addaction name="actionDemo"/>
     <addaction name="actionClose"/>
    </widget>
    <addaction name="menuFile"/>
@@ -62,6 +61,7 @@
    <attribute name="toolBarBreak">
     <bool>false</bool>
    </attribute>
+   <addaction name="actionDemo"/>
   </widget>
   <widget class="QStatusBar" name="statusBar"/>
   <action name="actionClose">

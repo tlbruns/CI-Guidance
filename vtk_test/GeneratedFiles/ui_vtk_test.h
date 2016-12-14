@@ -85,8 +85,8 @@ public:
         menuBar->addAction(menuFile->menuAction());
         menuFile->addAction(actionTracker_Setup);
         menuFile->addAction(actionRegister_Patient);
-        menuFile->addAction(actionDemo);
         menuFile->addAction(actionClose);
+        mainToolBar->addAction(actionDemo);
 
         retranslateUi(vtk_testClass);
         QObject::connect(actionClose, SIGNAL(triggered()), vtk_testClass, SLOT(close()));

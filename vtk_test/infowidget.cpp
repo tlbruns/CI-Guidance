@@ -5,9 +5,19 @@ InfoWidget::InfoWidget(QWidget *parent)
 	: QWidget(parent)
 {
 	ui.setupUi(this);
-	ui.button_centerCItool->setObjectName("centerCItool");
+
+	// create name used to identify object that triggered slot
+	ui.button_centerCItool->setObjectName("centerCItool"); 
 	ui.button_centerProbe->setObjectName("centerProbe");
 
+	// hide magnet sections
+	ui.MagnetBox->setHidden(true);
+	ui.label_text_Magnet->setHidden(true);
+	ui.label_text_error2->setHidden(true);
+	ui.label_mag_err->setHidden(true);
+	ui.progressBar_mag_err->setHidden(true);
+
+	// connect signals/slots
 	connect(ui.button_centerCItool, SIGNAL(clicked()), this, SLOT(slot_CenterView()));
 	connect(ui.button_centerProbe,  SIGNAL(clicked()), this, SLOT(slot_CenterView()));
 
