@@ -336,8 +336,10 @@ void vtk_test::slot_onGUITimer()
 	// Update actors with new transforms
 	m_probe_transform  = Trans_final[1];
 	m_CItool_transform = Trans_final[2];
-	pvtk_T_probe->SetMatrix(m_probe_transform.transpose().eval().data()); // vtk needs transpose of eigen matrix
-	pvtk_T_CItool->SetMatrix(m_CItool_transform.transpose().eval().data());
+	Matrix4d CItool_transpose = m_CItool_transform.transpose(); // vtktransform is transpose of eigen matrix
+	Matrix4d probe_transpose = m_probe_transform.transpose();
+	pvtk_T_probe->SetMatrix(probe_transpose.data());
+	pvtk_T_CItool->SetMatrix(CItool_transpose.data());
 	m_pActor_probe->SetUserTransform(pvtk_T_probe);
 	m_pActor_CItool->SetUserTransform(pvtk_T_CItool);
 
@@ -394,9 +396,9 @@ void vtk_test::slot_CenterView(QString senderObjName)
 {
 	double cam_offset = 20; // distance to offset camera from focal point
 
-	double targetx = m_CItarget_transform(3, 0);
-	double targety = m_CItarget_transform(3, 1);
-	double targetz = m_CItarget_transform(3, 2);
+	double targetx = m_CItarget_transform(0,3);
+	double targety = m_CItarget_transform(1,3);
+	double targetz = m_CItarget_transform(2,3);
 
 	// ensure view orientations are correct
 	  m_pRenderer_top->GetActiveCamera()->SetViewUp(0, 0, -1);
@@ -406,9 +408,9 @@ void vtk_test::slot_CenterView(QString senderObjName)
 	// determine sender
 	if (senderObjName == "centerCItool")
 	{
-		double toolx = m_CItool_transform(3, 0);
-		double tooly = m_CItool_transform(3, 1);
-		double toolz = m_CItool_transform(3, 2);
+		double toolx = m_CItool_transform(0,3);
+		double tooly = m_CItool_transform(1,3);
+		double toolz = m_CItool_transform(2,3);
 
 		m_pRenderer_top->GetActiveCamera()->SetPosition(toolx, tooly+cam_offset, toolz);
 		m_pRenderer_top->GetActiveCamera()->SetFocalPoint(toolx, tooly, toolz);
@@ -427,20 +429,22 @@ void vtk_test::slot_CenterView(QString senderObjName)
 	}
 	else if (senderObjName == "centerProbe")
 	{
-		double* probe_origin = m_pActor_probe->GetOrigin();
-		m_pRenderer_top->GetActiveCamera()->SetPosition(	probe_origin[0], probe_origin[1] + cam_offset,	probe_origin[2]);
-		m_pRenderer_top->GetActiveCamera()->SetFocalPoint(	probe_origin[0], probe_origin[1],				probe_origin[2]);
+		double probex = m_probe_transform(0, 3);
+		double probey = m_probe_transform(1, 3);
+		double probez = m_probe_transform(2, 3);
+		m_pRenderer_top->GetActiveCamera()->SetPosition(probex, probey + cam_offset, probez);
+		m_pRenderer_top->GetActiveCamera()->SetFocalPoint(probex, probey, probez);
 		m_pRenderer_top->ResetCamera(m_pActor_probe->GetBounds());
 
-		m_pRenderer_front->GetActiveCamera()->SetPosition(	probe_origin[0], probe_origin[1], probe_origin[2] + cam_offset);
-		m_pRenderer_front->GetActiveCamera()->SetFocalPoint(probe_origin[0], probe_origin[1], probe_origin[2]);
+		m_pRenderer_front->GetActiveCamera()->SetPosition(probex, probey, probez + cam_offset);
+		m_pRenderer_front->GetActiveCamera()->SetFocalPoint(probex, probey, probez);
 		m_pRenderer_front->ResetCamera(m_pActor_probe->GetBounds());
 
-		m_pRenderer_side->GetActiveCamera()->SetPosition(	probe_origin[0] + cam_offset, probe_origin[1], probe_origin[2]);
-		m_pRenderer_side->GetActiveCamera()->SetFocalPoint(	probe_origin[0],			  probe_origin[1], probe_origin[2]);
+		m_pRenderer_side->GetActiveCamera()->SetPosition(probex + cam_offset, probey, probez);
+		m_pRenderer_side->GetActiveCamera()->SetFocalPoint(probex, probey, probez);
 		m_pRenderer_side->ResetCamera(m_pActor_probe->GetBounds());
 
-		m_pRenderer_oblique->GetActiveCamera()->SetFocalPoint(probe_origin[0], probe_origin[1], probe_origin[2]);
+		m_pRenderer_oblique->GetActiveCamera()->SetFocalPoint(probex, probey, probez);
 		m_pRenderer_oblique->ResetCamera(m_pActor_probe->GetBounds());
 	}
 	else if (senderObjName == "centerCItarget")
@@ -519,6 +523,12 @@ void vtk_test::Update_err()
 	// Find angular error about the y axis
 	// dot product of x column and xhat is just R_yalign(0,0)
 	m_errors.phi = acos(R_yalign(0, 0));
+
+	/*cout << "CItarget:" << endl << m_CItarget_transform << endl;
+	cout << "CItool:"	<< endl << m_CItool_transform << endl;
+	cout << "Hti:"		<< endl << Hti << endl;
+	cout << "phi = "	<< (m_errors.phi*180.0 / M_PI) << endl;
+	cout << "theta = "	<< (m_errors.theta*180.0 / M_PI) << endl << endl;*/
 
 	emit sgn_err(m_errors.radial,100);
 }
@@ -718,7 +728,7 @@ void vtk_test::slot_DatalogStart()
 
 	// write header
 	QTextStream datalogStream(pDatalogFile);
-	datalogStream << "elapsed time [ms], x [mm], y [mm], z [mm], theta [rad], phi [rad]\n";
+	datalogStream << "elapsed time [ms], x [mm], y [mm], z [mm], radial [mm], axial [mm], theta [rad], phi [rad]\n";
 	//datalogStream << "elapsed time [ms], error [mm]\n";
 	
 	// start timer
@@ -761,6 +771,8 @@ void vtk_test::slot_WriteData()
 				  << QString::number(m_errors.x) << ", "
 				  << QString::number(m_errors.y) << ", "
 				  << QString::number(m_errors.z) << ", "
+				  << QString::number(m_errors.radial) << ", "
+				  << QString::number(m_errors.axial) << ", "
 				  << QString::number(m_errors.theta) << ", "
 				  << QString::number(m_errors.phi)	 << endl;
 }
