@@ -48,12 +48,14 @@ protected slots:
 	void slot_DatalogStart();
 	void slot_DatalogStop();
 	void slot_WriteData(double,double);
+	void slot_WriteData();
 
 signals:
 	void sgn_NewProbePosition(double,double,double);
 	void sgn_NewCIPosition(double,double,double);
 	void sgn_NewMagPosition(double,double,double);
 	void sgn_err(double,double);
+	void sgn_WriteData();
 
 private:
 	Ui::vtk_testClass	ui;
@@ -82,8 +84,11 @@ private:
 	vtkSmartPointer<vtkActor>		  m_pActor_probe;
 	vtkSmartPointer<vtkActor>		  m_pActor_CItool;
 	vtkSmartPointer<vtkActor>		  m_pActor_CItarget;
-	NDIAuroraTracker  m_tracker;
-	RotationMatrix	  dtRotMatrix;
+	NDIAuroraTracker	m_tracker;
+	RotationMatrix		dtRotMatrix;
+	Eigen::Matrix4d		m_CItarget_transform;
+	Eigen::Matrix4d		m_CItool_transform;
+	Eigen::Matrix4d		m_probe_transform;
 	Eigen::MatrixXd	  CI_entry;
 	bool			  flag_SetTarget;
 	void Update_err(std::vector<ToolInformationStruct> const& tools);

@@ -25,6 +25,7 @@
 #include <vtkTriangleFilter.h>
 #include <vtkStripper.h>
 #include <math.h>
+#include <Eigen/Core>
 #include <Eigen/Dense>
 #include <Eigen/Geometry>
 #include "infowidget.h"
@@ -47,12 +48,17 @@
  const static int FRAME_RATE_UPDATE_INTERVAL = 1000; //integer [ms]
  const static int NUM_TRACKED_TOOLS = 2; // which tools depends on the order in the .ini file (first N tools)
 
+ using namespace Eigen;
+
 vtk_test::vtk_test(QWidget *parent)
 	: QMainWindow(parent),
-	 m_time(0),
-	 m_tracker(TRACKER_COMPORT),
-	 m_frames(0),
-	 flag_SetTarget(FALSE)
+	m_time(0),
+	m_tracker(TRACKER_COMPORT),
+	m_frames(0),
+	flag_SetTarget(FALSE),
+	m_CItarget_transform(Matrix4d::Identity()),
+	m_CItool_transform(Matrix4d::Identity()),
+	m_probe_transform(Matrix4d::Identity())
 {
 	pDemo_Widget = NULL;
 	pDatalogFile = NULL;
@@ -246,7 +252,7 @@ void vtk_test::Initialize()
 	m_pRenderer_top_inset->AddActor(pActor_CI_target);
 	m_pRenderer_oblique->AddActor(pActor_CI_target);
 	m_pRenderer_front->AddActor(pActor_CI_target);
-	m_pRenderer_top_inset->AddActor(pActor_CI_target);
+	m_pRenderer_front_inset->AddActor(pActor_CI_target);
 	m_pRenderer_side->AddActor(pActor_CI_target);
 	m_pRenderer_side_inset->AddActor(pActor_CI_target);
 
@@ -275,6 +281,110 @@ void vtk_test::Initialize()
 	slot_CenterView(QString("centerCItool"));
 }
 
+void vtk_test::slot_onGUITimer()
+{
+	// declare variables	
+	boost::ptr_vector< Eigen::Quaterniond > quat_Polaris;
+	boost::ptr_vector< Eigen::Vector3d > p;
+	boost::ptr_vector< Eigen::Matrix3d> R;
+	boost::ptr_vector< Eigen::Matrix4d > T;
+	boost::ptr_vector< Eigen::Matrix4d > Trans_final;
+
+	quat_Polaris.resize(NUM_TRACKED_TOOLS + 1);
+	p.resize(NUM_TRACKED_TOOLS + 1);
+	R.resize(NUM_TRACKED_TOOLS + 1);
+	T.resize(NUM_TRACKED_TOOLS + 1);
+	Trans_final.resize(NUM_TRACKED_TOOLS + 1);
+
+	vtkSmartPointer<vtkTransform> pvtk_T_probe = vtkSmartPointer<vtkTransform>::New();
+	vtkSmartPointer<vtkTransform> pvtk_T_CItool = vtkSmartPointer<vtkTransform>::New();
+
+	// get transformations from tracker and place in eigen matrices
+	std::vector<ToolInformationStruct> tools = m_tracker.GetTransformations();
+
+	if (TRACKER_SIMULATE) {
+		quat_Polaris[1] = Eigen::Quaterniond(1, 0, 0, 0);
+		p[1](0) = -PROBE_DESIRED_Y + 2;	// Simulated position in Polaris Frame
+		p[1](1) = -PROBE_DESIRED_X - 4;
+		p[1](2) = -PROBE_DESIRED_Z + 6;
+		p[2](0) = -PROBE_DESIRED_Y + 3;
+		p[2](1) = -PROBE_DESIRED_X + 4;
+		p[2](2) = -PROBE_DESIRED_Z - 2;
+	}
+	else {
+		for (int toolnum = 1; toolnum <= NUM_TRACKED_TOOLS; toolnum++) {
+			quat_Polaris[toolnum] = Eigen::Quaterniond(tools[toolnum].q0, tools[toolnum].qx, tools[toolnum].qy, tools[toolnum].qz);
+			p[toolnum](0) = tools[toolnum].x;
+			p[toolnum](1) = tools[toolnum].y;
+			p[toolnum](2) = tools[toolnum].z;
+		}
+	}
+
+	// convert quaternion to rotation matrix and combine with translation into a transformation matrix
+	for (int toolnum = 1; toolnum <= NUM_TRACKED_TOOLS; toolnum++) {
+		R[toolnum] = quat_Polaris[toolnum].toRotationMatrix();
+		T[toolnum] = Eigen::Matrix4d::Identity();
+		T[toolnum].block<3, 3>(0, 0) = R[toolnum];
+		T[toolnum].block<3, 1>(0, 3) = p[toolnum];
+		Eigen::Matrix4d Polaris_sim_trans(4, 4);
+		Polaris_sim_trans << 0, -1,  0, 0, // note: inverse is equal to itself for this matrix
+							-1,  0,  0, 0,
+							 0,  0, -1, 0,
+							 0,  0,  0, 1;
+
+		// apply similarity transform
+		Trans_final[toolnum] = Polaris_sim_trans*T[toolnum] * Polaris_sim_trans.inverse();
+
+		Trans_final[toolnum] = Trans_final[toolnum].transpose().eval();
+	}
+	m_probe_transform  = Trans_final[1];
+	m_CItool_transform = Trans_final[2];
+	pvtk_T_probe->SetMatrix(m_probe_transform.data());
+	pvtk_T_CItool->SetMatrix(m_CItool_transform.data());
+	m_pActor_probe->SetUserTransform(pvtk_T_probe);
+	m_pActor_CItool->SetUserTransform(pvtk_T_CItool);
+
+	if (!TRACKER_SIMULATE)
+		Update_err(tools);
+	else
+	{
+		double tip_err = SIMULATE_ERROR;
+		emit sgn_err(tip_err, 5);
+	}
+
+	if (flag_SetTarget)
+	{
+		// set current CI tool position as the target (CI_entry)
+		Eigen::RowVectorXd temp(3);
+		temp << Trans_final[2](3, 0), Trans_final[2](3, 1), Trans_final[2](3, 2);
+		CI_entry = temp;
+
+		// update target actor
+		m_CItarget_transform = m_CItool_transform;
+		m_pActor_CItarget->SetUserTransform(pvtk_T_CItool);
+
+		// recenter view on target
+		slot_CenterView(QString("centerCItarget"));
+
+		// reset flag
+		flag_SetTarget = FALSE;
+	}
+
+	// update QVTKWidgets
+	m_pQVTK_top->update();
+	m_pQVTK_top_inset->update();
+	m_pQVTK_oblique->update();
+	m_pQVTK_front->update();
+	m_pQVTK_front_inset->update();
+	m_pQVTK_side->update();
+	m_pQVTK_side_inset->update();
+
+	emit sgn_NewProbePosition(Trans_final[1](3, 0), Trans_final[1](3, 1), Trans_final[1](3, 2));
+	emit sgn_NewCIPosition(Trans_final[2](3, 0), Trans_final[2](3, 1), Trans_final[2](3, 2));
+	emit sgn_WriteData();
+	m_frames++;
+}
+
 void vtk_test::resizeEvent(QResizeEvent *event)
 {
 	QWidget::resizeEvent(event);
@@ -295,8 +405,11 @@ void vtk_test::slot_onRegistration(Eigen::MatrixXd T)
 
 void vtk_test::slot_CenterView(QString senderObjName)
 {
-	double cam_offset = 50; // distance to offset camera from focal point
-	double* target_origin = m_pActor_CItarget->GetOrigin();
+	double cam_offset = 20; // distance to offset camera from focal point
+
+	double targetx = m_CItarget_transform(3, 0);
+	double targety = m_CItarget_transform(3, 1);
+	double targetz = m_CItarget_transform(3, 2);
 
 	// ensure view orientations are correct
 	  m_pRenderer_top->GetActiveCamera()->SetViewUp(0, 0, -1);
@@ -306,25 +419,28 @@ void vtk_test::slot_CenterView(QString senderObjName)
 	// determine sender
 	if (senderObjName == "centerCItool")
 	{
-		double* tool_origin = m_pActor_CItarget->GetOrigin();
-		m_pRenderer_top->GetActiveCamera()->SetPosition(	tool_origin[0], tool_origin[1] +cam_offset, tool_origin[2]);
-		m_pRenderer_top->GetActiveCamera()->SetFocalPoint(	tool_origin[0], tool_origin[1],				tool_origin[2]);
+		double toolx = m_CItool_transform(3, 0);
+		double tooly = m_CItool_transform(3, 1);
+		double toolz = m_CItool_transform(3, 2);
+
+		m_pRenderer_top->GetActiveCamera()->SetPosition(toolx, tooly+cam_offset, toolz);
+		m_pRenderer_top->GetActiveCamera()->SetFocalPoint(toolx, tooly, toolz);
 		m_pRenderer_top->ResetCamera(m_pActor_CItool->GetBounds());
 
-		m_pRenderer_front->GetActiveCamera()->SetPosition(	tool_origin[0], tool_origin[1], tool_origin[2]+cam_offset);
-		m_pRenderer_front->GetActiveCamera()->SetFocalPoint(tool_origin[0], tool_origin[1], tool_origin[2]);
+		m_pRenderer_front->GetActiveCamera()->SetPosition(toolx, tooly, toolz+cam_offset);
+		m_pRenderer_front->GetActiveCamera()->SetFocalPoint(toolx, tooly, toolz);
 		m_pRenderer_front->ResetCamera(m_pActor_CItool->GetBounds());
 		
-		m_pRenderer_side->GetActiveCamera()->SetPosition(	tool_origin[0]+cam_offset,	tool_origin[1], tool_origin[2]);
-		m_pRenderer_side->GetActiveCamera()->SetFocalPoint(	tool_origin[0],				tool_origin[1], tool_origin[2]);
+		m_pRenderer_side->GetActiveCamera()->SetPosition(toolx+cam_offset, tooly, toolz);
+		m_pRenderer_side->GetActiveCamera()->SetFocalPoint(toolx, tooly, toolz);
 		m_pRenderer_side->ResetCamera(m_pActor_CItool->GetBounds());
 
-		m_pRenderer_oblique->GetActiveCamera()->SetFocalPoint(tool_origin[0], tool_origin[1], tool_origin[2]);
+		m_pRenderer_oblique->GetActiveCamera()->SetFocalPoint(toolx, tooly, toolz);
 		m_pRenderer_oblique->ResetCamera(m_pActor_CItool->GetBounds());
 	}
 	else if (senderObjName == "centerProbe")
 	{
-		double* probe_origin = m_pActor_CItarget->GetOrigin();
+		double* probe_origin = m_pActor_probe->GetOrigin();
 		m_pRenderer_top->GetActiveCamera()->SetPosition(	probe_origin[0], probe_origin[1] + cam_offset,	probe_origin[2]);
 		m_pRenderer_top->GetActiveCamera()->SetFocalPoint(	probe_origin[0], probe_origin[1],				probe_origin[2]);
 		m_pRenderer_top->ResetCamera(m_pActor_probe->GetBounds());
@@ -342,16 +458,16 @@ void vtk_test::slot_CenterView(QString senderObjName)
 	}
 	else if (senderObjName == "centerCItarget")
 	{
-		m_pRenderer_top->GetActiveCamera()->SetPosition(	target_origin[0], target_origin[1] + cam_offset, target_origin[2]);
-		m_pRenderer_top->GetActiveCamera()->SetFocalPoint(	target_origin[0], target_origin[1],				 target_origin[2]);
+		m_pRenderer_top->GetActiveCamera()->SetPosition(targetx, targety+cam_offset, targetz);
+		m_pRenderer_top->GetActiveCamera()->SetFocalPoint(targetx, targety,	targetz);
 		m_pRenderer_top->ResetCamera(m_pActor_CItarget->GetBounds());
 
-		m_pRenderer_front->GetActiveCamera()->SetPosition(	target_origin[0], target_origin[1], target_origin[2] + cam_offset);
-		m_pRenderer_front->GetActiveCamera()->SetFocalPoint(target_origin[0], target_origin[1], target_origin[2]);
+		m_pRenderer_front->GetActiveCamera()->SetPosition(targetx, targety, targetz+cam_offset);
+		m_pRenderer_front->GetActiveCamera()->SetFocalPoint(targetx, targety, targetz);
 		m_pRenderer_front->ResetCamera(m_pActor_CItarget->GetBounds());
 
-		m_pRenderer_side->GetActiveCamera()->SetPosition(  target_origin[0] + cam_offset, target_origin[1], target_origin[2]);
-		m_pRenderer_side->GetActiveCamera()->SetFocalPoint(target_origin[0],			  target_origin[1], target_origin[2]);
+		m_pRenderer_side->GetActiveCamera()->SetPosition(targetx+cam_offset, targety, targetz);
+		m_pRenderer_side->GetActiveCamera()->SetFocalPoint(targetx, targety, targetz);
 		m_pRenderer_side->ResetCamera(m_pActor_CItarget->GetBounds());
 
 		m_pRenderer_oblique->ResetCamera(m_pActor_CItarget->GetBounds());
@@ -362,119 +478,20 @@ void vtk_test::slot_CenterView(QString senderObjName)
 	}
 
 	// center inset views (always centered on target)
-	  m_pRenderer_top_inset->GetActiveCamera()->SetPosition(target_origin[0], target_origin[1] + 20, target_origin[2]);
-	m_pRenderer_front_inset->GetActiveCamera()->SetPosition(target_origin[0], target_origin[1], target_origin[2] + 20);
-	 m_pRenderer_side_inset->GetActiveCamera()->SetPosition(target_origin[0] + 20, target_origin[1], target_origin[2]);
+	  m_pRenderer_top_inset->GetActiveCamera()->SetPosition(targetx, targety+cam_offset, targetz);
+	m_pRenderer_front_inset->GetActiveCamera()->SetPosition(targetx, targety, targetz+cam_offset);
+	 m_pRenderer_side_inset->GetActiveCamera()->SetPosition(targetx+cam_offset, targety, targetz);
 
-	  m_pRenderer_top_inset->GetActiveCamera()->SetFocalPoint(target_origin[0], target_origin[1], target_origin[2]);
-	m_pRenderer_front_inset->GetActiveCamera()->SetFocalPoint(target_origin[0], target_origin[1], target_origin[2]);
-	 m_pRenderer_side_inset->GetActiveCamera()->SetFocalPoint(target_origin[0], target_origin[1], target_origin[2]);
+	  m_pRenderer_top_inset->GetActiveCamera()->SetFocalPoint(targetx, targety, targetz);
+	m_pRenderer_front_inset->GetActiveCamera()->SetFocalPoint(targetx, targety, targetz);
+	 m_pRenderer_side_inset->GetActiveCamera()->SetFocalPoint(targetx, targety, targetz);
 
 	  m_pRenderer_top_inset->GetActiveCamera()->SetViewUp(0, 0, -1);
 	m_pRenderer_front_inset->GetActiveCamera()->SetViewUp(0, 1, 0);
 	 m_pRenderer_side_inset->GetActiveCamera()->SetViewUp(0, 1, 0);
 }
 
-void vtk_test::slot_onGUITimer()
-{
-	// declare variables	
-	boost::ptr_vector< Eigen::Quaterniond > quat_Polaris;
-	boost::ptr_vector< Eigen::Vector3d > p;
-	boost::ptr_vector< Eigen::Matrix3d> R;
-	boost::ptr_vector< Eigen::Matrix4d > T;
-	boost::ptr_vector< Eigen::Matrix4d > Trans_final;
 
-	quat_Polaris.resize( NUM_TRACKED_TOOLS+1 );
-	p.resize( NUM_TRACKED_TOOLS+1 );
-	R.resize( NUM_TRACKED_TOOLS+1 );
-	T.resize( NUM_TRACKED_TOOLS+1 );
-	Trans_final.resize( NUM_TRACKED_TOOLS+1 );
-
-	vtkSmartPointer<vtkTransform> pvtk_T_probe = vtkSmartPointer<vtkTransform>::New();
-	vtkSmartPointer<vtkTransform> pvtk_T_CItool = vtkSmartPointer<vtkTransform>::New();
-
-	// get transformations from tracker and place in eigen matrices
-	std::vector<ToolInformationStruct> tools = m_tracker.GetTransformations();
-
-	if(TRACKER_SIMULATE){
-		quat_Polaris[1] = Eigen::Quaterniond(1, 0, 0, 0);
-		p[1](0) = -PROBE_DESIRED_Y+2;	// Simulated position in Polaris Frame
-		p[1](1) = -PROBE_DESIRED_X-4;
-		p[1](2) = -PROBE_DESIRED_Z+6;
-		p[2](0) = -PROBE_DESIRED_Y+3;
-		p[2](1) = -PROBE_DESIRED_X+4;
-		p[2](2) = -PROBE_DESIRED_Z-2;
-	}
-	else{
-		for (int toolnum = 1; toolnum <=NUM_TRACKED_TOOLS; toolnum++){
-			quat_Polaris[toolnum] = Eigen::Quaterniond(tools[toolnum].q0, tools[toolnum].qx, tools[toolnum].qy, tools[toolnum].qz);
-			p[toolnum](0) = tools[toolnum].x;
-			p[toolnum](1) = tools[toolnum].y;
-			p[toolnum](2) = tools[toolnum].z;
-		}
-	}
-
-	// convert quaternion to rotation matrix and combine with translation into a transformation matrix
-	for (int toolnum = 1; toolnum <=NUM_TRACKED_TOOLS; toolnum++){
-		R[toolnum] = quat_Polaris[toolnum].toRotationMatrix();
-		T[toolnum] = Eigen::Matrix4d::Identity();
-		T[toolnum].block<3,3>(0,0) = R[toolnum];
-		T[toolnum].block<3,1>(0,3) = p[toolnum];
-		Eigen::Matrix4d Polaris_sim_trans(4,4);
-		Polaris_sim_trans << 0,-1, 0, 0, // note: inverse is equal to itself for this matrix
-							-1, 0, 0, 0,
-							 0, 0,-1, 0,
-							 0, 0, 0, 1;
-
-		// apply similarity transform
-		Trans_final[toolnum] = Polaris_sim_trans*T[toolnum]*Polaris_sim_trans.inverse();
-
-		Trans_final[toolnum] = Trans_final[toolnum].transpose().eval();
-	}
-	pvtk_T_probe->SetMatrix( Trans_final[1].data() );
-	pvtk_T_CItool->SetMatrix( Trans_final[2].data() );
-	m_pActor_probe->SetUserTransform(pvtk_T_probe);
-	m_pActor_CItool->SetUserTransform(pvtk_T_CItool);
-
-
-	// update QVTKWidgets
-	m_pQVTK_top->update();
-	m_pQVTK_top_inset->update();
-	m_pQVTK_oblique->update();
-	m_pQVTK_front->update();
-	m_pQVTK_front_inset->update();
-	m_pQVTK_side->update();
-	m_pQVTK_side_inset->update();
-
-	if(!TRACKER_SIMULATE)
-		Update_err(tools);
-	else
-	{
-		double tip_err = SIMULATE_ERROR;
-		emit sgn_err(tip_err, 5);
-	}
-
-	if(flag_SetTarget)
-	{
-		// set current CI tool position as the target (CI_entry)
-		Eigen::RowVectorXd temp(3);
-		temp <<	Trans_final[2](3,0), Trans_final[2](3,1), Trans_final[2](3,2);
-		CI_entry = temp;
-
-		// update target actor
-		m_pActor_CItarget->SetUserTransform(pvtk_T_CItool);
-
-		// recenter view on target
-		slot_CenterView(QString("centerCItarget"));
-
-		// reset flag
-		flag_SetTarget = FALSE;
-	}
-
-	emit sgn_NewProbePosition( Trans_final[1](3,0), Trans_final[1](3,1), Trans_final[1](3,2) );
-	emit sgn_NewCIPosition( Trans_final[2](3,0), Trans_final[2](3,1), Trans_final[2](3,2) );
-	m_frames++;
-}
 
 void vtk_test::Update_err(std::vector<ToolInformationStruct> const& tools)
 {
@@ -620,10 +637,6 @@ void vtk_test::slot_Register_Patient()
 	RigidRegistration reg = Pat_Reg_Widget.GetRegistration();
 	cout << reg.GetTransform() << endl;
 	SetTransformforCI_target(ref_patient_data, reg.GetTransform());
-	//m_pRenderer_oblique->AddActor(m_pActor_CItarget);
-	//m_pRenderer_top->AddActor(m_pActor_CItarget);
-	//m_pRenderer_front->AddActor(m_pActor_CItarget);
-	//m_pRenderer_side->AddActor(m_pActor_CItarget);
 }
 
 void vtk_test::slot_Tracker_Setup()
@@ -646,6 +659,7 @@ void vtk_test::slot_Demo()
 
 	// open dialog
 	pDemo_Widget->setModal(false);
+	pDemo_Widget->setWindowFlags(Qt::WindowStaysOnTopHint);
 	pDemo_Widget->show();
 }
 
@@ -674,13 +688,15 @@ void vtk_test::slot_DatalogStart()
 
 	// write header
 	QTextStream datalogStream(pDatalogFile);
-	datalogStream << "elapsed time [ms], error [mm]\n";
+	datalogStream << "elapsed time [ms], x [mm], y [mm], z [mm], theta [rad], phi [rad]\n";
+	//datalogStream << "elapsed time [ms], error [mm]\n";
 	
 	// start timer
 	m_datalogTimer.start();
 
 	// enable datalogging
-	connect(this, SIGNAL(sgn_err(double,double)), this, SLOT(slot_WriteData(double,double)));
+	connect(this, SIGNAL(sgn_WriteData()), this, SLOT(slot_WriteData()));
+	//connect(this, SIGNAL(sgn_err(double,double)), this, SLOT(slot_WriteData(double,double)));
 
 	// Note: file is automatically closed when program is terminated
 }
@@ -688,7 +704,8 @@ void vtk_test::slot_DatalogStart()
 void vtk_test::slot_DatalogStop()
 {
 	// stop datalogging
-	disconnect(this, SIGNAL(sgn_err(double,double)), this, SLOT(slot_WriteData(double,double)));
+	disconnect(this, SIGNAL(sgn_WriteData()), this, SLOT(slot_WriteData()));
+	//disconnect(this, SIGNAL(sgn_err(double,double)), this, SLOT(slot_WriteData(double,double)));
 
 	// close file
 	if(pDatalogFile != NULL){
@@ -699,12 +716,65 @@ void vtk_test::slot_DatalogStop()
 }
 
 void vtk_test::slot_WriteData(double err_ci, double err_mag)
-{
+{	// legacy method- do not use!!
+
 	// write next line
 	QTextStream datalogStream(pDatalogFile);
 	datalogStream << QString::number(m_datalogTimer.elapsed()) << ", " << QString::number(err_ci) << endl;
-
-	// restart timer
-	//m_datalogTimer.restart();
 }
 
+void vtk_test::slot_WriteData()
+{
+	// transformations for target (t) and insertion tool (i) in base frame (b)
+	double Hbt_d[16];
+	m_pActor_CItarget->GetMatrix(Hbt_d);
+	Matrix4d Hbt = Map<Matrix<double, 4, 4, RowMajor> >(Hbt_d);
+
+	double Hbi_d[16];
+	m_pActor_CItool->GetMatrix(Hbi_d);
+	Matrix4d Hbi = Map<Matrix<double, 4, 4, RowMajor> >(Hbi_d);
+
+	// transformation between target (t) and insertion tool (i) = Hti
+	Matrix4d Hti = Hbt.inverse()*Hbi;
+
+	// Cartesian error in target frame
+	double x_error = Hti(3, 0);
+	double y_error = Hti(3, 1);
+	double z_error = Hti(3, 2);
+
+	// angular error between trajectory axes (y)
+	// y_i = Hti.block<3,1>(0,1).   dot(y_i,[0;1;0]) = y_i(2) = Hti(1,1)
+	// note: both are already unit vectors so no normalization required
+	double theta = acos(Hti(1, 1)); // [rad]
+
+	// Find axis of rotation corresponding to theta
+	// (orthogonal to y_i and y_t)
+	Vector3d axis_theta;
+	if (theta == 0.0) // can realistically only occur in simulation
+	{
+		axis_theta = Vector3d::UnitX(); // arbitrary because theta = 0, just can't be NAN
+	}
+	else
+	{
+		axis_theta = Hti.block<3, 1>(0, 1).cross(Vector3d::UnitY());
+		axis_theta = axis_theta / axis_theta.norm(); // normalize
+	}
+	
+	// Rotate to align y axes and make xy planes coplanar
+	Matrix3d R_theta;
+	R_theta = AngleAxisd(theta, axis_theta);
+	Matrix3d R_yalign = R_theta*Hti.block<3, 3>(0, 0);
+
+	// Find angular error about the y axis
+	// dot product of x column and xhat is just R_yalign(0,0)
+	double phi = acos(R_yalign(0, 0));
+
+	// write next line
+	QTextStream datalogStream(pDatalogFile);
+	datalogStream << QString::number(m_datalogTimer.elapsed()) << ", " 
+				  << QString::number(x_error) << ", "
+				  << QString::number(y_error) << ", "
+				  << QString::number(z_error) << ", "
+				  << QString::number(theta)	  << ", "
+				  << QString::number(phi)	  << endl;
+}

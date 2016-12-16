@@ -9,7 +9,6 @@ Demo_Widget::Demo_Widget(QWidget *parent)
 	ui->setupUi(this);
 	connect(ui->button_set_target, SIGNAL(clicked()), this, SLOT(slot_button_set_target()));
 	connect(ui->button_datalog, SIGNAL(clicked()), this, SLOT(slot_button_datalog()));
-	connect(ui->button_end, SIGNAL(clicked()), this, SLOT(slot_button_end()));
 }
 
 Demo_Widget::~Demo_Widget()
@@ -24,10 +23,21 @@ void Demo_Widget::slot_button_set_target()
 
 void Demo_Widget::slot_button_datalog()
 {
+	// disable Set Target button and enable Save Data button
+	connect(ui->button_end, SIGNAL(clicked()), this, SLOT(slot_button_end()));
+	disconnect(ui->button_set_target, SIGNAL(clicked()), this, SLOT(slot_button_set_target()));
+
+	ui->button_datalog->setText(QString("Collecting..."));
+	ui->button_end->setText(QString("Done"));
 	emit sgn_DatalogStart();
 }
 
 void Demo_Widget::slot_button_end()
 {
+	// re-enable Set Target button
+	connect(ui->button_set_target, SIGNAL(clicked()), this, SLOT(slot_button_set_target()));
+
+	ui->button_end->setText(QString("Data Saved"));
+	ui->button_datalog->setText(QString("Record Data"));
 	emit sgn_DatalogStop();
 }
