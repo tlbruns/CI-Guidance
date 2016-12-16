@@ -62,6 +62,7 @@
     <bool>false</bool>
    </attribute>
    <addaction name="actionDemo"/>
+   <addaction name="actionCenter_Target"/>
   </widget>
   <widget class="QStatusBar" name="statusBar"/>
   <action name="actionClose">
@@ -87,6 +88,11 @@
   <action name="actionDemo">
    <property name="text">
     <string>Demo</string>
+   </property>
+  </action>
+  <action name="actionCenter_Target">
+   <property name="text">
+    <string>Center Target</string>
    </property>
   </action>
  </widget>

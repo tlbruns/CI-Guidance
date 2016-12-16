@@ -20,7 +20,7 @@ class vtkRenderer;
 class QVTKWidget;
 
 
-struct AlignmentErrors {
+struct AlignmentErrors { // Note: all units are [mm] or [rad]
 	double x; // cartesian errors
 	double y;
 	double z;
@@ -49,6 +49,7 @@ protected:
 protected slots:
 	void slot_onGUITimer();
 	void slot_CenterView(QString);
+	void slot_CenterTarget();
 	void slot_Register_Patient();
 	void slot_Tracker_Setup();
 	void slot_SetTarget();
@@ -66,6 +67,7 @@ signals:
 	void sgn_NewCIPosition(double,double,double);
 	void sgn_NewMagPosition(double,double,double);
 	void sgn_err(double,double);
+	void sgn_err_ang(double);
 	void sgn_WriteData();
 
 private:

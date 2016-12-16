@@ -121,7 +121,7 @@ vtk_test::vtk_test(QWidget *parent)
 	camera_oblique->SetPosition(0, 100, 0); // XZ Plane
 	camera_oblique->SetFocalPoint(0, 0, 0);
 	camera_oblique->SetViewUp(0, 0, -1);
-	camera_oblique->SetClippingRange(-1000, 1000); // based on tracker workspace limits in x
+	camera_oblique->SetClippingRange(-2000, 2000); // based on tracker workspace limits in x
 	m_pRenderer_oblique->SetActiveCamera(camera_oblique);
 
 
@@ -223,7 +223,9 @@ vtk_test::vtk_test(QWidget *parent)
 	connect(this, SIGNAL(sgn_NewCIPosition(double,double,double)), iw, SLOT(slot_NewCIPosition(double,double,double)));
 	connect(this, SIGNAL(sgn_NewMagPosition(double,double,double)), iw, SLOT(slot_NewMagPosition(double,double,double)));
 	connect(iw, SIGNAL(sgn_CenterView(QString)), this, SLOT(slot_CenterView(QString)));
+	connect(ui.actionCenter_Target, SIGNAL(triggered()), this, SLOT(slot_CenterTarget()));
 	connect(this, SIGNAL(sgn_err(double,double)), iw, SLOT(slot_update_err(double,double)));
+	connect(this, SIGNAL(sgn_err_ang(double)), iw, SLOT(slot_update_err_theta(double)));
 }
 
 
@@ -482,6 +484,11 @@ void vtk_test::slot_CenterView(QString senderObjName)
 	 m_pRenderer_side_inset->GetActiveCamera()->SetViewUp(0, 1, 0);
 }
 
+void vtk_test::slot_CenterTarget()
+{
+	slot_CenterView("centerCItarget");
+}
+
 void vtk_test::Update_err()
 {
 	// transformation between target (t) and insertion tool (i) = Hti
@@ -514,7 +521,6 @@ void vtk_test::Update_err()
 		axis_theta.normalize();
 	}
 
-
 	// Rotate to align y axes and make xy planes coplanar
 	Matrix3d R_theta;
 	R_theta = AngleAxisd(m_errors.theta, axis_theta);
@@ -531,6 +537,7 @@ void vtk_test::Update_err()
 	cout << "theta = "	<< (m_errors.theta*180.0 / M_PI) << endl << endl;*/
 
 	emit sgn_err(m_errors.radial,100);
+	emit sgn_err_ang(m_errors.theta);
 }
 
 void vtk_test::Update_err(std::vector<ToolInformationStruct> const& tools)
