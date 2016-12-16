@@ -19,6 +19,17 @@
 class vtkRenderer;
 class QVTKWidget;
 
+
+struct AlignmentErrors {
+	double x; // cartesian errors
+	double y;
+	double z;
+	double radial; // distance to primary axis (perpendicular)
+	double axial;  // distance along primary axis (tangential)
+	double theta;  // angle to primary axis
+	double phi;	   // angle about primary axis
+};
+
 class vtk_test : public QMainWindow
 {
 	Q_OBJECT
@@ -89,9 +100,11 @@ private:
 	Eigen::Matrix4d		m_CItarget_transform;
 	Eigen::Matrix4d		m_CItool_transform;
 	Eigen::Matrix4d		m_probe_transform;
-	Eigen::MatrixXd	  CI_entry;
-	bool			  flag_SetTarget;
+	Eigen::MatrixXd		CI_entry;
+	bool				flag_SetTarget;
+	AlignmentErrors		m_errors;
 	void Update_err(std::vector<ToolInformationStruct> const& tools);
+	void Update_err();
 };
 
 #endif // VTK_TEST_H

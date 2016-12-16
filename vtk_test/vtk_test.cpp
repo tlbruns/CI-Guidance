@@ -38,12 +38,8 @@
 #define PRINT_MATRIX(mat) (mat);
 #endif
 
-#define	 TRACKER_SIMULATE		0		// 1 for simulate, 0 if using tracker
+#define	 TRACKER_SIMULATE		0		// 1 for simulate, 0 if using tracker  NOT CURRENTLY WORKING!!
 #define  TRACKER_COMPORT		7		// NOTE: COM port is zero-indexed (N-1)
-#define	 PROBE_DESIRED_X		-79.3	// fixed position to use as the target pose
-#define	 PROBE_DESIRED_Y		-376.8	
-#define	 PROBE_DESIRED_Z		1451.95
-#define  SIMULATE_ERROR			0.9		// Error to use when simulating
 
  const static int FRAME_RATE_UPDATE_INTERVAL = 1000; //integer [ms]
  const static int NUM_TRACKED_TOOLS = 2; // which tools depends on the order in the .ini file (first N tools)
@@ -304,12 +300,13 @@ void vtk_test::slot_onGUITimer()
 
 	if (TRACKER_SIMULATE) {
 		quat_Polaris[1] = Eigen::Quaterniond(1, 0, 0, 0);
-		p[1](0) = -PROBE_DESIRED_Y + 2;	// Simulated position in Polaris Frame
-		p[1](1) = -PROBE_DESIRED_X - 4;
-		p[1](2) = -PROBE_DESIRED_Z + 6;
-		p[2](0) = -PROBE_DESIRED_Y + 3;
-		p[2](1) = -PROBE_DESIRED_X + 4;
-		p[2](2) = -PROBE_DESIRED_Z - 2;
+		quat_Polaris[2] = Eigen::Quaterniond(AngleAxisd(M_PI / 12.0, Vector3d::UnitZ()));
+		p[1] = Vector3d(-20,-100,-15);
+		p[2] = Vector3d(-2, 0.5, 0.2);
+		m_CItarget_transform = Matrix4d::Identity();
+		vtkSmartPointer<vtkTransform> pvtk_T_CItarget = vtkSmartPointer<vtkTransform>::New();
+		pvtk_T_CItarget->Identity();
+		m_pActor_CItarget->SetUserTransform(pvtk_T_CItarget);
 	}
 	else {
 		for (int toolnum = 1; toolnum <= NUM_TRACKED_TOOLS; toolnum++) {
@@ -334,31 +331,21 @@ void vtk_test::slot_onGUITimer()
 
 		// apply similarity transform
 		Trans_final[toolnum] = Polaris_sim_trans*T[toolnum] * Polaris_sim_trans.inverse();
-
-		Trans_final[toolnum] = Trans_final[toolnum].transpose().eval();
 	}
+
+	// Update actors with new transforms
 	m_probe_transform  = Trans_final[1];
 	m_CItool_transform = Trans_final[2];
-	pvtk_T_probe->SetMatrix(m_probe_transform.data());
-	pvtk_T_CItool->SetMatrix(m_CItool_transform.data());
+	pvtk_T_probe->SetMatrix(m_probe_transform.transpose().eval().data()); // vtk needs transpose of eigen matrix
+	pvtk_T_CItool->SetMatrix(m_CItool_transform.transpose().eval().data());
 	m_pActor_probe->SetUserTransform(pvtk_T_probe);
 	m_pActor_CItool->SetUserTransform(pvtk_T_CItool);
 
-	if (!TRACKER_SIMULATE)
-		Update_err(tools);
-	else
-	{
-		double tip_err = SIMULATE_ERROR;
-		emit sgn_err(tip_err, 5);
-	}
+	// Update alignment error
+	Update_err();
 
 	if (flag_SetTarget)
 	{
-		// set current CI tool position as the target (CI_entry)
-		Eigen::RowVectorXd temp(3);
-		temp << Trans_final[2](3, 0), Trans_final[2](3, 1), Trans_final[2](3, 2);
-		CI_entry = temp;
-
 		// update target actor
 		m_CItarget_transform = m_CItool_transform;
 		m_pActor_CItarget->SetUserTransform(pvtk_T_CItool);
@@ -379,8 +366,8 @@ void vtk_test::slot_onGUITimer()
 	m_pQVTK_side->update();
 	m_pQVTK_side_inset->update();
 
-	emit sgn_NewProbePosition(Trans_final[1](3, 0), Trans_final[1](3, 1), Trans_final[1](3, 2));
-	emit sgn_NewCIPosition(Trans_final[2](3, 0), Trans_final[2](3, 1), Trans_final[2](3, 2));
+	emit sgn_NewProbePosition(m_probe_transform(0,3), m_probe_transform(1, 3), m_probe_transform(2, 3));
+	emit sgn_NewCIPosition(m_CItool_transform(0,3), m_CItool_transform(1, 3), m_CItool_transform(2, 3));
 	emit sgn_WriteData();
 	m_frames++;
 }
@@ -491,7 +478,50 @@ void vtk_test::slot_CenterView(QString senderObjName)
 	 m_pRenderer_side_inset->GetActiveCamera()->SetViewUp(0, 1, 0);
 }
 
+void vtk_test::Update_err()
+{
+	// transformation between target (t) and insertion tool (i) = Hti
+	Matrix4d Hti = m_CItarget_transform.inverse().eval() * m_CItool_transform;
 
+	// Cartesian error in target frame
+	m_errors.x = Hti(0,3);
+	m_errors.y = Hti(1,3);
+	m_errors.z = Hti(2,3);
+
+	// errors tangential and perpendicular to trajectory axis (yhat)
+	Vector2d radial(m_errors.x, m_errors.z);
+	m_errors.radial = radial.norm();
+	m_errors.axial = m_errors.y;
+
+	// angular error between trajectory axes (y)
+	// y_i = Hti.block<3,1>(0,1).   dot(y_i,[0;1;0]) = y_i(2) = Hti(1,1)
+	m_errors.theta = acos(Hti(1, 1)); // [rad]
+
+	// Find axis of rotation corresponding to theta
+	// (orthogonal to y_i and y_t)
+	Vector3d axis_theta;
+	if (m_errors.theta == 0.0) // can realistically only occur in simulation
+	{
+		axis_theta = Vector3d::UnitX(); // arbitrary because theta = 0, just can't be NAN
+	}
+	else
+	{
+		axis_theta = Hti.block<3,1>(0,1).cross(Vector3d::UnitY());
+		axis_theta.normalize();
+	}
+
+
+	// Rotate to align y axes and make xy planes coplanar
+	Matrix3d R_theta;
+	R_theta = AngleAxisd(m_errors.theta, axis_theta);
+	Matrix3d R_yalign = R_theta*Hti.block<3, 3>(0, 0);
+
+	// Find angular error about the y axis
+	// dot product of x column and xhat is just R_yalign(0,0)
+	m_errors.phi = acos(R_yalign(0, 0));
+
+	emit sgn_err(m_errors.radial,100);
+}
 
 void vtk_test::Update_err(std::vector<ToolInformationStruct> const& tools)
 {
@@ -509,19 +539,19 @@ void vtk_test::Update_err(std::vector<ToolInformationStruct> const& tools)
 	//					   pow((-tools[2].z - (PROBE_DESIRED_Z)),2) );
 }
 
-void SetTransformForCI_target( vtkSmartPointer<vtkActor> pActor_CI_target )
-{
-	Eigen::MatrixXd T = Eigen::MatrixXd::Identity(4,4);
-	T(0,3) = PROBE_DESIRED_X;
-	T(1,3) = PROBE_DESIRED_Y;
-	T(2,3) = PROBE_DESIRED_Z;
-
-	T = T.transpose().eval();
-
-	vtkSmartPointer<vtkTransform> vtkT = vtkSmartPointer<vtkTransform>::New();
-	vtkT->SetMatrix( T.data() );
-	pActor_CI_target->SetUserTransform( vtkT );
-}
+//void SetTransformForCI_target( vtkSmartPointer<vtkActor> pActor_CI_target )
+//{
+//	Eigen::MatrixXd T = Eigen::MatrixXd::Identity(4,4);
+//	T(0,3) = PROBE_DESIRED_X;
+//	T(1,3) = PROBE_DESIRED_Y;
+//	T(2,3) = PROBE_DESIRED_Z;
+//
+//	T = T.transpose().eval();
+//
+//	vtkSmartPointer<vtkTransform> vtkT = vtkSmartPointer<vtkTransform>::New();
+//	vtkT->SetMatrix( T.data() );
+//	pActor_CI_target->SetUserTransform( vtkT );
+//}
 
 void vtk_test::SetTransformforCI_target(patient_data ref_patient_data, Eigen::MatrixXd T_registration)
 {
@@ -725,56 +755,12 @@ void vtk_test::slot_WriteData(double err_ci, double err_mag)
 
 void vtk_test::slot_WriteData()
 {
-	// transformations for target (t) and insertion tool (i) in base frame (b)
-	double Hbt_d[16];
-	m_pActor_CItarget->GetMatrix(Hbt_d);
-	Matrix4d Hbt = Map<Matrix<double, 4, 4, RowMajor> >(Hbt_d);
-
-	double Hbi_d[16];
-	m_pActor_CItool->GetMatrix(Hbi_d);
-	Matrix4d Hbi = Map<Matrix<double, 4, 4, RowMajor> >(Hbi_d);
-
-	// transformation between target (t) and insertion tool (i) = Hti
-	Matrix4d Hti = Hbt.inverse()*Hbi;
-
-	// Cartesian error in target frame
-	double x_error = Hti(3, 0);
-	double y_error = Hti(3, 1);
-	double z_error = Hti(3, 2);
-
-	// angular error between trajectory axes (y)
-	// y_i = Hti.block<3,1>(0,1).   dot(y_i,[0;1;0]) = y_i(2) = Hti(1,1)
-	// note: both are already unit vectors so no normalization required
-	double theta = acos(Hti(1, 1)); // [rad]
-
-	// Find axis of rotation corresponding to theta
-	// (orthogonal to y_i and y_t)
-	Vector3d axis_theta;
-	if (theta == 0.0) // can realistically only occur in simulation
-	{
-		axis_theta = Vector3d::UnitX(); // arbitrary because theta = 0, just can't be NAN
-	}
-	else
-	{
-		axis_theta = Hti.block<3, 1>(0, 1).cross(Vector3d::UnitY());
-		axis_theta = axis_theta / axis_theta.norm(); // normalize
-	}
-	
-	// Rotate to align y axes and make xy planes coplanar
-	Matrix3d R_theta;
-	R_theta = AngleAxisd(theta, axis_theta);
-	Matrix3d R_yalign = R_theta*Hti.block<3, 3>(0, 0);
-
-	// Find angular error about the y axis
-	// dot product of x column and xhat is just R_yalign(0,0)
-	double phi = acos(R_yalign(0, 0));
-
 	// write next line
 	QTextStream datalogStream(pDatalogFile);
 	datalogStream << QString::number(m_datalogTimer.elapsed()) << ", " 
-				  << QString::number(x_error) << ", "
-				  << QString::number(y_error) << ", "
-				  << QString::number(z_error) << ", "
-				  << QString::number(theta)	  << ", "
-				  << QString::number(phi)	  << endl;
+				  << QString::number(m_errors.x) << ", "
+				  << QString::number(m_errors.y) << ", "
+				  << QString::number(m_errors.z) << ", "
+				  << QString::number(m_errors.theta) << ", "
+				  << QString::number(m_errors.phi)	 << endl;
 }
