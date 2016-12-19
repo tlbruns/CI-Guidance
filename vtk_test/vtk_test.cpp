@@ -50,16 +50,19 @@
 vtk_test::vtk_test(QWidget *parent)
 	: QMainWindow(parent),
 	 m_time(0),
-	 m_tracker(TRACKER_COMPORT),
 	 m_frames(0),
 	 flag_SetTarget(FALSE)
 {
 	pDemo_Widget = NULL;
 	pDatalogFile = NULL;
+	pTrackerSetup = NULL;
+	m_tracker = NULL;
+
+	isTracking = false;
 
 	ui.setupUi(this);
 	
-	double dpi = QApplication::screens().at(0)->physicalDotsPerInch();
+	dpi = QApplication::screens().at(0)->physicalDotsPerInch();
 
 	// setup info panel on left side
 	InfoWidget *iw = new InfoWidget(this);
@@ -71,23 +74,138 @@ vtk_test::vtk_test(QWidget *parent)
 	m_pQVTK_top= new QVTKWidget(this);
 	ui.gridlayout->addWidget(m_pQVTK_top,0,1,1,1,0);		// create QT widget
 
-	m_pRenderer_top = vtkSmartPointer<vtkRenderer>::New();  // setup VTK renderer
+	
+
+	
+
+
+	// setup top inset
+	m_pQVTK_top_inset = new QVTKWidget(this);
+	ui.gridlayout->addWidget(m_pQVTK_top_inset, 0, 1, 1, 1, Qt::AlignBottom | Qt::AlignRight);
+
+	
+
+
+	// setup oblique view
+	m_pQVTK_oblique = new QVTKWidget(this);
+	ui.gridlayout->addWidget(m_pQVTK_oblique,0,2,1,1,0);
+
+	
+
+	// setup front view
+	m_pQVTK_front = new QVTKWidget(this);
+	ui.gridlayout->addWidget(m_pQVTK_front,1,1,1,1,0);
+
+	
+	// setup front inset
+	m_pQVTK_front_inset = new QVTKWidget(this);
+	ui.gridlayout->addWidget(m_pQVTK_front_inset, 1, 1, 1, 1, Qt::AlignBottom | Qt::AlignRight);
+
+	
+	// setup right side view
+	m_pQVTK_side = new QVTKWidget(this);
+	ui.gridlayout->addWidget(m_pQVTK_side,1,2,1,1,0);
+
+	
+
+	// setup right side inset
+	m_pQVTK_side_inset = new QVTKWidget(this);
+	ui.gridlayout->addWidget(m_pQVTK_side_inset, 1, 2, 1, 1, Qt::AlignBottom | Qt::AlignRight);
+
+
+	// setup timers
+	m_timer.setInterval(0);
+	m_timer.setSingleShot(false);
+	connect(&m_timer, SIGNAL(timeout()), this, SLOT(slot_onGUITimer()));
+	//m_timer.start();
+
+	m_frameRateTimer.setInterval(FRAME_RATE_UPDATE_INTERVAL);
+	m_frameRateTimer.setSingleShot(false);
+	connect(&m_frameRateTimer, SIGNAL(timeout()), this, SLOT(slot_onFrameRateTimer()));
+	m_frameRateTimer.start();
+	ui.statusBar->addWidget(&m_frameRateLabel);
+
+	// connect signals/slots
+	connect(ui.actionRegister_Patient, SIGNAL(triggered()),this, SLOT(slot_Register_Patient()));
+	connect(ui.actionTracker_Setup_2, SIGNAL(triggered()), this, SLOT(slot_Tracker_Setup()));
+	connect(ui.actionDemo, SIGNAL(triggered()), this, SLOT(slot_Demo()));
+	connect(this, SIGNAL(sgn_NewProbePosition(double,double,double)), iw, SLOT(slot_NewProbePosition(double,double,double)));
+	connect(this, SIGNAL(sgn_NewCIPosition(double,double,double)), iw, SLOT(slot_NewCIPosition(double,double,double)));
+	connect(this, SIGNAL(sgn_NewMagPosition(double,double,double)), iw, SLOT(slot_NewMagPosition(double,double,double)));
+	connect(iw, SIGNAL(sgn_CenterView(QString)), this, SLOT(slot_CenterView(QString)));
+	connect(this, SIGNAL(sgn_err(double,double)), iw, SLOT(slot_update_err(double,double)));
+	connect(ui.actionTracker_Init, SIGNAL(triggered()), this, SLOT(slot_Tracker_Init()));
+	connect(ui.actionTracker_Stop, SIGNAL(triggered()), this, SLOT(slot_Tracker_Stop()));
+
+	//Tracker GUI
+	ui.actionTracker_Stop->setEnabled(false);
+	this->tracker_Port = TRACKER_COMPORT;
+	QString trackerText = "Init Port " + QString::number(this->tracker_Port);
+	ui.actionTracker_Init->setText(trackerText);
+	
+	//InitiVTK
+	InitVTK();
+}
+
+
+vtk_test::~vtk_test()
+{
+	// stop tracker
+	if (isTracking)
+		m_tracker->StopTracking();
+	
+	// Close file
+	if(pDatalogFile != NULL){
+		if(pDatalogFile->isOpen()){
+			pDatalogFile->close();
+		}
+	}
+}
+
+void vtk_test::slot_Tracker_Stop() {
+		ui.actionTracker_Init->setDisabled(false);
+		ui.actionTracker_Stop->setDisabled(true);
+		m_timer.stop();
+		m_tracker->StopTracking();
+		isTracking = false;
+}
+
+void vtk_test::slot_Tracker_Init() {
+	if (m_tracker != NULL)
+		delete m_tracker;
+	m_tracker = new NDIAuroraTracker(this->tracker_Port);
+	cout << "Connecting to the tracker in port " << this->tracker_Port << "...." << endl;
+	int result = m_tracker->InitializeSystem();
+	if (result != 0) {
+		result = m_tracker->StartTracking();
+		if (result == 0)
+			cout << "Error! The tracker can no track! " << endl;
+		else {
+			cout << "Working! Starting tracking!" << endl;
+			m_timer.start();
+			ui.actionTracker_Init->setDisabled(true);
+			ui.actionTracker_Stop->setDisabled(false);
+			isTracking = true;
+		}
+	}
+	else
+		cout << " ERROR! The tracker can not be initialized!" << endl;
+}
+
+void vtk_test::InitVTK() {
+
+    m_pRenderer_top = vtkSmartPointer<vtkRenderer>::New();  // setup VTK renderer
 	m_pQVTK_top->setMinimumSize((int)(3 * dpi), (int)(3 * dpi));
 	m_pQVTK_top->GetRenderWindow()->AddRenderer(m_pRenderer_top);
 	m_pRenderer_top->SetBackground(0.8, 0.8, 0.8);
 	m_pRenderer_top->SetGradientBackground(true);
-
+	
 	vtkSmartPointer<vtkCamera> camera_top = vtkSmartPointer<vtkCamera>::New();
 	camera_top->SetPosition(0, 100, 0); // XZ Plane
 	camera_top->SetFocalPoint(0, 0, 0);
 	camera_top->SetViewUp(0, 0, -1);
 	camera_top->SetClippingRange(-1000, 1000); // based on tracker workspace limits in x
 	m_pRenderer_top->SetActiveCamera(camera_top);
-
-
-	// setup top inset
-	m_pQVTK_top_inset = new QVTKWidget(this);
-	ui.gridlayout->addWidget(m_pQVTK_top_inset, 0, 1, 1, 1, Qt::AlignBottom | Qt::AlignRight);
 
 	m_pRenderer_top_inset = vtkSmartPointer<vtkRenderer>::New();
 	m_pQVTK_top_inset->setMinimumSize((int)(1 * dpi), (int)(1 * dpi));
@@ -104,11 +222,6 @@ vtk_test::vtk_test(QWidget *parent)
 	camera_top_inset->SetClippingRange(-1000, 1000); // based on tracker workspace limits in x
 	m_pRenderer_top_inset->SetActiveCamera(camera_top_inset);
 
-
-	// setup oblique view
-	m_pQVTK_oblique = new QVTKWidget(this);
-	ui.gridlayout->addWidget(m_pQVTK_oblique,0,2,1,1,0);
-
 	m_pRenderer_oblique = vtkSmartPointer<vtkRenderer>::New();
 	m_pQVTK_oblique->setMinimumSize((int)(3 * dpi), (int)(3 * dpi));
 	m_pQVTK_oblique->GetRenderWindow()->AddRenderer(m_pRenderer_oblique);
@@ -122,28 +235,18 @@ vtk_test::vtk_test(QWidget *parent)
 	camera_oblique->SetClippingRange(-1000, 1000); // based on tracker workspace limits in x
 	m_pRenderer_oblique->SetActiveCamera(camera_oblique);
 
-
-	// setup front view
-	m_pQVTK_front = new QVTKWidget(this);
-	ui.gridlayout->addWidget(m_pQVTK_front,1,1,1,1,0);
-
 	m_pRenderer_front = vtkSmartPointer<vtkRenderer>::New();
 	m_pQVTK_front->setMinimumSize((int)(3 * dpi), (int)(3 * dpi));
 	m_pQVTK_front->GetRenderWindow()->AddRenderer(m_pRenderer_front);
 	m_pRenderer_front->SetBackground(0.8, 0.8, 0.8);
 	m_pRenderer_front->SetGradientBackground(true);
 
-	vtkSmartPointer<vtkCamera> camera_front = vtkSmartPointer<vtkCamera>::New(); 
+	vtkSmartPointer<vtkCamera> camera_front = vtkSmartPointer<vtkCamera>::New();
 	camera_front->SetPosition(0, 0, 500); // XY Plane
 	camera_front->SetFocalPoint(0, 0, 0);
 	camera_front->SetViewUp(0, 1, 0);
 	camera_front->SetClippingRange(-100, 3500); // based on tracker workspace limits in z
 	m_pRenderer_front->SetActiveCamera(camera_front);
-
-
-	// setup front inset
-	m_pQVTK_front_inset = new QVTKWidget(this);
-	ui.gridlayout->addWidget(m_pQVTK_front_inset, 1, 1, 1, 1, Qt::AlignBottom | Qt::AlignRight);
 
 	m_pRenderer_front_inset = vtkSmartPointer<vtkRenderer>::New();
 	m_pQVTK_front_inset->setMinimumSize((int)(1 * dpi), (int)(1 * dpi));
@@ -159,27 +262,18 @@ vtk_test::vtk_test(QWidget *parent)
 	camera_front_inset->SetClippingRange(-100, 3500); // based on tracker workspace limits in z
 	m_pRenderer_front_inset->SetActiveCamera(camera_front_inset);
 
-
-	// setup right side view
-	m_pQVTK_side = new QVTKWidget(this);
-	ui.gridlayout->addWidget(m_pQVTK_side,1,2,1,1,0);
-
 	m_pRenderer_side = vtkSmartPointer<vtkRenderer>::New();
-	m_pQVTK_side->setMinimumSize( (int)(3*dpi), (int)(3*dpi) );
-	m_pQVTK_side->GetRenderWindow()->AddRenderer(m_pRenderer_side);	
-	m_pRenderer_side->SetBackground(0.8,0.8,0.8);
+	m_pQVTK_side->setMinimumSize((int)(3 * dpi), (int)(3 * dpi));
+	m_pQVTK_side->GetRenderWindow()->AddRenderer(m_pRenderer_side);
+	m_pRenderer_side->SetBackground(0.8, 0.8, 0.8);
 	m_pRenderer_side->SetGradientBackground(true);
 
-	vtkSmartPointer<vtkCamera> camera_side = vtkSmartPointer<vtkCamera>::New(); 
-	camera_side->SetPosition(500,0,0); // YZ Plane
-	camera_side->SetFocalPoint(0,0,0);
-	camera_side->SetViewUp(0,1,0);
-	camera_side->SetClippingRange(-1000,1000); // based on tracker workspace limits in y
+	vtkSmartPointer<vtkCamera> camera_side = vtkSmartPointer<vtkCamera>::New();
+	camera_side->SetPosition(500, 0, 0); // YZ Plane
+	camera_side->SetFocalPoint(0, 0, 0);
+	camera_side->SetViewUp(0, 1, 0);
+	camera_side->SetClippingRange(-1000, 1000); // based on tracker workspace limits in y
 	m_pRenderer_side->SetActiveCamera(camera_side);
-
-	// setup right side inset
-	m_pQVTK_side_inset = new QVTKWidget(this);
-	ui.gridlayout->addWidget(m_pQVTK_side_inset, 1, 2, 1, 1, Qt::AlignBottom | Qt::AlignRight);
 
 	m_pRenderer_side_inset = vtkSmartPointer<vtkRenderer>::New();
 	m_pQVTK_side_inset->setMinimumSize((int)(1 * dpi), (int)(1 * dpi));
@@ -189,53 +283,12 @@ vtk_test::vtk_test(QWidget *parent)
 	m_pRenderer_side_inset->SetGradientBackground(true);
 
 	vtkSmartPointer<vtkCamera> camera_side_inset = vtkSmartPointer<vtkCamera>::New();
-	camera_side_inset->SetPosition(inset_dist,0,0); // YZ Plane
+	camera_side_inset->SetPosition(inset_dist, 0, 0); // YZ Plane
 	camera_side_inset->SetFocalPoint(0, 0, 0);
 	camera_side_inset->SetViewUp(0, 1, 0);
 	camera_side_inset->SetClippingRange(-1000, 1000); // based on tracker workspace limits in y
 	m_pRenderer_side_inset->SetActiveCamera(camera_side_inset);
 
-
-	// setup timers
-	m_timer.setInterval(0);
-	m_timer.setSingleShot(false);
-	connect(&m_timer, SIGNAL(timeout()), this, SLOT(slot_onGUITimer()));
-	m_timer.start();
-
-	m_frameRateTimer.setInterval(FRAME_RATE_UPDATE_INTERVAL);
-	m_frameRateTimer.setSingleShot(false);
-	connect(&m_frameRateTimer, SIGNAL(timeout()), this, SLOT(slot_onFrameRateTimer()));
-	m_frameRateTimer.start();
-	ui.statusBar->addWidget(&m_frameRateLabel);
-
-	// setup tracker
-	m_tracker.InitializeSystem();
-	m_tracker.StartTracking();
-	
-
-	// connect signals/slots
-	connect(ui.actionRegister_Patient, SIGNAL(triggered()),this, SLOT(slot_Register_Patient()));
-	connect(ui.actionTracker_Setup, SIGNAL(triggered()), this, SLOT(slot_Tracker_Setup()));
-	connect(ui.actionDemo, SIGNAL(triggered()), this, SLOT(slot_Demo()));
-	connect(this, SIGNAL(sgn_NewProbePosition(double,double,double)), iw, SLOT(slot_NewProbePosition(double,double,double)));
-	connect(this, SIGNAL(sgn_NewCIPosition(double,double,double)), iw, SLOT(slot_NewCIPosition(double,double,double)));
-	connect(this, SIGNAL(sgn_NewMagPosition(double,double,double)), iw, SLOT(slot_NewMagPosition(double,double,double)));
-	connect(iw, SIGNAL(sgn_CenterView(QString)), this, SLOT(slot_CenterView(QString)));
-	connect(this, SIGNAL(sgn_err(double,double)), iw, SLOT(slot_update_err(double,double)));
-}
-
-
-vtk_test::~vtk_test()
-{
-	// stop tracker
-	m_tracker.StopTracking();
-	
-	// Close file
-	if(pDatalogFile != NULL){
-		if(pDatalogFile->isOpen()){
-			pDatalogFile->close();
-		}
-	}
 }
 
 void vtk_test::Initialize()
@@ -394,7 +447,7 @@ void vtk_test::slot_onGUITimer()
 	vtkSmartPointer<vtkTransform> pvtk_T_CItool = vtkSmartPointer<vtkTransform>::New();
 
 	// get transformations from tracker and place in eigen matrices
-	std::vector<ToolInformationStruct> tools = m_tracker.GetTransformations();
+	std::vector<ToolInformationStruct> tools = m_tracker->GetTransformations();
 
 	if(TRACKER_SIMULATE){
 		quat_Polaris[1] = Eigen::Quaterniond(1, 0, 0, 0);
@@ -626,8 +679,21 @@ void vtk_test::slot_Register_Patient()
 	//m_pRenderer_side->AddActor(m_pActor_CItarget);
 }
 
+void vtk_test::slot_update_COM(int thePort) {
+	this->tracker_Port = thePort;
+	QString trackerText = "Init Port " + QString::number(this->tracker_Port+1);
+	ui.actionTracker_Init->setText(trackerText);
+}
+
 void vtk_test::slot_Tracker_Setup()
 {
+	// ensure we are not creating duplicates
+	if (pTrackerSetup != NULL)
+	{
+		delete pTrackerSetup;
+	}
+	pTrackerSetup = new TrackerSetup(this->tracker_Port,this);
+	pTrackerSetup->show();
 }
 
 void vtk_test::slot_Demo()
