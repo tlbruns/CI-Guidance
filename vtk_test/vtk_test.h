@@ -15,6 +15,7 @@
 #include <Eigen/Dense>
 #include <patient_data.h>
 #include "demo_widget.h"
+#include "TrackerSetup.h"
 
 class vtkRenderer;
 class QVTKWidget;
@@ -47,6 +48,9 @@ protected:
 	Demo_Widget *pDemo_Widget;
 
 protected slots:
+    void slot_Tracker_Init();
+    void slot_Tracker_Stop();
+	void slot_update_COM(int thePort);
 	void slot_onGUITimer();
 	void slot_CenterView(QString);
 	void slot_CenterTarget();
@@ -71,6 +75,10 @@ signals:
 	void sgn_WriteData();
 
 private:
+	bool isTracking;
+	int tracker_Port;
+	double dpi;
+	TrackerSetup *pTrackerSetup;
 	Ui::vtk_testClass	ui;
 	QTimer			m_timer;
 	QTimer			m_frameRateTimer;
@@ -97,7 +105,7 @@ private:
 	vtkSmartPointer<vtkActor>		  m_pActor_probe;
 	vtkSmartPointer<vtkActor>		  m_pActor_CItool;
 	vtkSmartPointer<vtkActor>		  m_pActor_CItarget;
-	NDIAuroraTracker	m_tracker;
+	NDIAuroraTracker	*m_tracker;
 	RotationMatrix		dtRotMatrix;
 	Eigen::Matrix4d		m_CItarget_transform;
 	Eigen::Matrix4d		m_CItool_transform;
@@ -107,6 +115,7 @@ private:
 	AlignmentErrors		m_errors;
 	void Update_err(std::vector<ToolInformationStruct> const& tools);
 	void Update_err();
+	void InitVTK();
 };
 
 #endif // VTK_TEST_H
