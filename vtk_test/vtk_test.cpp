@@ -92,6 +92,7 @@ vtk_test::vtk_test(QWidget *parent)
 	ui.gridlayout->addWidget(m_pQVTK_top_inset, 0, 1, 1, 1, Qt::AlignBottom | Qt::AlignRight);
 
 	m_pRenderer_top_inset = vtkSmartPointer<vtkRenderer>::New();
+	//m_pQVTK_top_inset->setMinimumSize((int)(0.5 * dpi), (int)(0.5 * dpi)); // for lower res displays
 	m_pQVTK_top_inset->setMinimumSize((int)(1 * dpi), (int)(1 * dpi));
 	m_pQVTK_top_inset->setMaximumSize((int)(1.5*dpi), (int)(1.5*dpi));
 	m_pQVTK_top_inset->GetRenderWindow()->AddRenderer(m_pRenderer_top_inset);
@@ -148,6 +149,7 @@ vtk_test::vtk_test(QWidget *parent)
 	ui.gridlayout->addWidget(m_pQVTK_front_inset, 1, 1, 1, 1, Qt::AlignBottom | Qt::AlignRight);
 
 	m_pRenderer_front_inset = vtkSmartPointer<vtkRenderer>::New();
+	//m_pQVTK_front_inset->setMinimumSize((int)(0.5 * dpi), (int)(0.5 * dpi)); // for lower res displays
 	m_pQVTK_front_inset->setMinimumSize((int)(1 * dpi), (int)(1 * dpi));
 	m_pQVTK_front_inset->setMaximumSize((int)(1.5*dpi), (int)(1.5*dpi));
 	m_pQVTK_front_inset->GetRenderWindow()->AddRenderer(m_pRenderer_front_inset);
@@ -184,6 +186,7 @@ vtk_test::vtk_test(QWidget *parent)
 	ui.gridlayout->addWidget(m_pQVTK_side_inset, 1, 2, 1, 1, Qt::AlignBottom | Qt::AlignRight);
 
 	m_pRenderer_side_inset = vtkSmartPointer<vtkRenderer>::New();
+	//m_pQVTK_side_inset->setMinimumSize((int)(0.5 * dpi), (int)(0.5 * dpi));
 	m_pQVTK_side_inset->setMinimumSize((int)(1 * dpi), (int)(1 * dpi));
 	m_pQVTK_side_inset->setMaximumSize((int)(1.5*dpi), (int)(1.5*dpi));
 	m_pQVTK_side_inset->GetRenderWindow()->AddRenderer(m_pRenderer_side_inset);
@@ -470,6 +473,11 @@ void vtk_test::slot_CenterView(QString senderObjName)
 		return; // no match for sender name
 	}
 
+	// increase size of top view to fill window better
+	m_pRenderer_top->GetActiveCamera()->Zoom(3.5);
+	m_pRenderer_front->GetActiveCamera()->Zoom(1.2);
+	m_pRenderer_side->GetActiveCamera()->Zoom(1.2);
+
 	// center inset views (always centered on target)
 	  m_pRenderer_top_inset->GetActiveCamera()->SetPosition(targetx, targety+cam_offset, targetz);
 	m_pRenderer_front_inset->GetActiveCamera()->SetPosition(targetx, targety, targetz+cam_offset);
@@ -671,7 +679,7 @@ vtkSmartPointer<vtkActor> vtk_test::LoadSTLFile(QString const& str, double opaci
 
 void vtk_test::slot_Register_Patient()
 {
-	// TO DO: insert pop up file browser to select patient data
+	// open file dialog and select patient trajectory plan
 	QString fileName = QFileDialog::getOpenFileName(NULL,QString("Open Patient Data File"));
 	cout << fileName.toLocal8Bit().data() << endl;
 
