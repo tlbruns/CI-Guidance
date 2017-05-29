@@ -32,6 +32,7 @@ public:
     QAction *actionTracker_Setup;
     QAction *actionRegister_Patient;
     QAction *actionDemo;
+    QAction *actionCenter_Target;
     QWidget *centralWidget;
     QGridLayout *gridLayout_3;
     QGridLayout *gridlayout;
@@ -55,6 +56,8 @@ public:
         actionRegister_Patient->setObjectName(QStringLiteral("actionRegister_Patient"));
         actionDemo = new QAction(vtk_testClass);
         actionDemo->setObjectName(QStringLiteral("actionDemo"));
+        actionCenter_Target = new QAction(vtk_testClass);
+        actionCenter_Target->setObjectName(QStringLiteral("actionCenter_Target"));
         centralWidget = new QWidget(vtk_testClass);
         centralWidget->setObjectName(QStringLiteral("centralWidget"));
         gridLayout_3 = new QGridLayout(centralWidget);
@@ -85,8 +88,9 @@ public:
         menuBar->addAction(menuFile->menuAction());
         menuFile->addAction(actionTracker_Setup);
         menuFile->addAction(actionRegister_Patient);
-        menuFile->addAction(actionDemo);
         menuFile->addAction(actionClose);
+        mainToolBar->addAction(actionDemo);
+        mainToolBar->addAction(actionCenter_Target);
 
         retranslateUi(vtk_testClass);
         QObject::connect(actionClose, SIGNAL(triggered()), vtk_testClass, SLOT(close()));
@@ -102,6 +106,7 @@ public:
         actionTracker_Setup->setText(QApplication::translate("vtk_testClass", "Tracker Setup", 0));
         actionRegister_Patient->setText(QApplication::translate("vtk_testClass", "Register Patient", 0));
         actionDemo->setText(QApplication::translate("vtk_testClass", "Demo", 0));
+        actionCenter_Target->setText(QApplication::translate("vtk_testClass", "Center Target", 0));
         menuFile->setTitle(QApplication::translate("vtk_testClass", "File", 0));
     } // retranslateUi
 

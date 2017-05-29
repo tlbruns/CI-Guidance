@@ -19,6 +19,17 @@
 class vtkRenderer;
 class QVTKWidget;
 
+
+struct AlignmentErrors { // Note: all units are [mm] or [rad]
+	double x; // cartesian errors
+	double y;
+	double z;
+	double radial; // distance to primary axis (perpendicular)
+	double axial;  // distance along primary axis (tangential)
+	double theta;  // angle to primary axis
+	double phi;	   // angle about primary axis
+};
+
 class vtk_test : public QMainWindow
 {
 	Q_OBJECT
@@ -37,6 +48,8 @@ protected:
 
 protected slots:
 	void slot_onGUITimer();
+	void slot_CenterView(QString);
+	void slot_CenterTarget();
 	void slot_Register_Patient();
 	void slot_Tracker_Setup();
 	void slot_SetTarget();
@@ -47,39 +60,53 @@ protected slots:
 	void slot_DatalogStart();
 	void slot_DatalogStop();
 	void slot_WriteData(double,double);
+	void slot_WriteData();
 
 signals:
 	void sgn_NewProbePosition(double,double,double);
 	void sgn_NewCIPosition(double,double,double);
 	void sgn_NewMagPosition(double,double,double);
 	void sgn_err(double,double);
+	void sgn_err_ang(double);
+	void sgn_WriteData();
 
 private:
-	Ui::vtk_testClass ui;
-	QTimer			  m_timer;
-	QTimer			  m_frameRateTimer;
-	QElapsedTimer	  m_datalogTimer;
-	int				  m_frames;
-	QLabel			  m_statusLabel;
-	QLabel			  m_frameRateLabel;
-	QVTKWidget        *m_pQVTK_top;
-	QVTKWidget        *m_pQVTK_oblique;
-	QVTKWidget        *m_pQVTK_front;
-	QVTKWidget        *m_pQVTK_side;
-	QFile			  *pDatalogFile;
-	int				  m_time;
-	vtkRenderer       *m_pRenderer_oblique;
-	vtkRenderer		  *m_pRenderer_top;
-	vtkRenderer		  *m_pRenderer_front;
-	vtkRenderer		  *m_pRenderer_side;
-	NDIAuroraTracker  m_tracker;
+	Ui::vtk_testClass	ui;
+	QTimer			m_timer;
+	QTimer			m_frameRateTimer;
+	QElapsedTimer	m_datalogTimer;
+	int				m_frames;
+	QLabel			m_statusLabel;
+	QLabel			m_frameRateLabel;
+	QVTKWidget		*m_pQVTK_top;
+	QVTKWidget		*m_pQVTK_top_inset;
+	QVTKWidget		*m_pQVTK_oblique;
+	QVTKWidget		*m_pQVTK_front;
+	QVTKWidget		*m_pQVTK_front_inset;
+	QVTKWidget		*m_pQVTK_side;
+	QVTKWidget		*m_pQVTK_side_inset;
+	QFile			*pDatalogFile;
+	int				m_time;
+	vtkSmartPointer<vtkRenderer>    m_pRenderer_oblique;
+	vtkSmartPointer<vtkRenderer>	m_pRenderer_top;
+	vtkSmartPointer<vtkRenderer>	m_pRenderer_top_inset;
+	vtkSmartPointer<vtkRenderer>	m_pRenderer_front;
+	vtkSmartPointer<vtkRenderer>	m_pRenderer_front_inset;
+	vtkSmartPointer<vtkRenderer>	m_pRenderer_side;
+	vtkSmartPointer<vtkRenderer>	m_pRenderer_side_inset;
 	vtkSmartPointer<vtkActor>		  m_pActor_probe;
 	vtkSmartPointer<vtkActor>		  m_pActor_CItool;
 	vtkSmartPointer<vtkActor>		  m_pActor_CItarget;
-	RotationMatrix	  dtRotMatrix;
-	Eigen::MatrixXd	  CI_entry;
-	bool			  flag_SetTarget;
+	NDIAuroraTracker	m_tracker;
+	RotationMatrix		dtRotMatrix;
+	Eigen::Matrix4d		m_CItarget_transform;
+	Eigen::Matrix4d		m_CItool_transform;
+	Eigen::Matrix4d		m_probe_transform;
+	Eigen::MatrixXd		CI_entry;
+	bool				flag_SetTarget;
+	AlignmentErrors		m_errors;
 	void Update_err(std::vector<ToolInformationStruct> const& tools);
+	void Update_err();
 };
 
 #endif // VTK_TEST_H

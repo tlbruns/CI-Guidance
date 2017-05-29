@@ -17,6 +17,11 @@ public slots:
 	void slot_NewCIPosition(double,double,double);
 	void slot_NewMagPosition(double,double,double);
 	void slot_update_err(double,double);
+	void slot_update_err_theta(double);
+	void slot_CenterView();
+
+signals:
+	void sgn_CenterView(QString);
 
 private:
 	Ui::Info	ui;
