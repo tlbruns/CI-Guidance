@@ -247,9 +247,13 @@ vtk_test::~vtk_test()
 
 void vtk_test::Initialize()
 {
-	double color1[] = { 0.8,0.3,0.3 };
-	vtkSmartPointer<vtkActor> pActor_CI_target = LoadOBJFile(QString::fromLocal8Bit("D:\\Trevor\\My Documents\\Code\\VTKtest\\vtk_test\\x64\\Release\\insertion_tool_wtarget.obj"), 0.3, color1);
-	m_pRenderer_top->AddActor(pActor_CI_target);
+    //QString ciToolFilename = QString::fromLocal8Bit("D:\\Trevor\\My Documents\\Code\\VTKtest\\vtk_test\\x64\\Release\\insertion_tool_wtarget.obj");
+    QString ciToolFilename = QString::fromLocal8Bit("D:\\Trevor\\My Documents\\Code\\VTKtest\\vtk_test\\x64\\Release\\insertion_tool_shell.obj");
+    //QString ciToolFilename = QString::fromLocal8Bit("D:\\Trevor\\My Documents\\MED lab\\Cochlear R01\\CAD\\Insertion Tool\\mkii\\insertion_tool_shell.obj");
+    double color1[] = { 0.8,0.3,0.3 };
+    vtkSmartPointer<vtkActor> pActor_CI_target = LoadOBJFile(ciToolFilename, 0.3, color1);
+    //vtkSmartPointer<vtkActor> pActor_CI_target = LoadSTLFile(ciToolFilename, 0.3, color1);
+    m_pRenderer_top->AddActor(pActor_CI_target);
 	m_pRenderer_top_inset->AddActor(pActor_CI_target);
 	m_pRenderer_oblique->AddActor(pActor_CI_target);
 	m_pRenderer_front->AddActor(pActor_CI_target);
@@ -258,8 +262,9 @@ void vtk_test::Initialize()
 	m_pRenderer_side_inset->AddActor(pActor_CI_target);
 
 	double color2[] = { 0.3,1.0,0.3 };
-	vtkSmartPointer<vtkActor> pActor_CI_tool = LoadOBJFile(QString::fromLocal8Bit("D:\\Trevor\\My Documents\\Code\\VTKtest\\vtk_test\\x64\\Release\\insertion_tool_wtarget.obj"), 1.0, color2);
-	m_pRenderer_top->AddActor(pActor_CI_tool);
+    vtkSmartPointer<vtkActor> pActor_CI_tool = LoadOBJFile(ciToolFilename, 1.0, color2);
+    //vtkSmartPointer<vtkActor> pActor_CI_tool = LoadSTLFile(ciToolFilename, 1.0, color2);
+    m_pRenderer_top->AddActor(pActor_CI_tool);
 	m_pRenderer_top_inset->AddActor(pActor_CI_tool);
 	m_pRenderer_oblique->AddActor(pActor_CI_tool);
 	m_pRenderer_front->AddActor(pActor_CI_tool);
@@ -339,10 +344,12 @@ void vtk_test::slot_onGUITimer()
 	}
 
 	// Update actors with new transforms
-	m_probe_transform  = Trans_final[1];
-	m_CItool_transform = Trans_final[2];
+    m_probe_transform = Trans_final[1];
+    m_CItool_transform = Trans_final[2];
+    //m_skull_transform = Trans_final[3];
 	Matrix4d CItool_transpose = m_CItool_transform.transpose(); // vtktransform is transpose of eigen matrix
 	Matrix4d probe_transpose = m_probe_transform.transpose();
+    //Matrix4d skull_transpose = m_skull_transform.transpose();
 	pvtk_T_probe->SetMatrix(probe_transpose.data());
 	pvtk_T_CItool->SetMatrix(CItool_transpose.data());
 	m_pActor_probe->SetUserTransform(pvtk_T_probe);
@@ -375,7 +382,8 @@ void vtk_test::slot_onGUITimer()
 
 	emit sgn_NewProbePosition(m_probe_transform(0,3), m_probe_transform(1, 3), m_probe_transform(2, 3));
 	emit sgn_NewCIPosition(m_CItool_transform(0,3), m_CItool_transform(1, 3), m_CItool_transform(2, 3));
-	emit sgn_WriteData();
+    emit sgn_NewSkullPosition(m_skull_transform(0, 3), m_skull_transform(1, 3), m_skull_transform(2, 3));
+    emit sgn_WriteData();
 	m_frames++;
 }
 
@@ -680,18 +688,23 @@ vtkSmartPointer<vtkActor> vtk_test::LoadSTLFile(QString const& str, double opaci
 void vtk_test::slot_Register_Patient()
 {
 	// open file dialog and select patient trajectory plan
-	QString fileName = QFileDialog::getOpenFileName(NULL,QString("Open Patient Data File"));
-	cout << fileName.toLocal8Bit().data() << endl;
+    QString fileName = QFileDialog::getOpenFileName(NULL, "Open Patient Data File", NULL, "CI Plan (*.ini);;All Files (*.*)");
+	//cout << fileName.toLocal8Bit().data() << endl;
 
-	// load patient data
-	patient_data ref_patient_data;
+	// parse patient data
+    patient_data patientData(fileName);
+    if (patientData.parse())
+    {
 
-	Pat_Reg_Widget Pat_Reg_Widget(ref_patient_data);
+    }
+
+	Pat_Reg_Widget Pat_Reg_Widget(patientData);
 	connect(this, SIGNAL(sgn_NewProbePosition(double,double,double) ), &Pat_Reg_Widget, SLOT(slot_onNewProbePosition(double,double,double)));
-	Pat_Reg_Widget.exec();
+    connect(this, SIGNAL(sgn_NewSkullPosition(double, double, double)), &Pat_Reg_Widget, SLOT(slot_onNewSkullPosition(double, double, double)));
+    Pat_Reg_Widget.exec();
 	RigidRegistration reg = Pat_Reg_Widget.GetRegistration();
 	cout << reg.GetTransform() << endl;
-	SetTransformforCI_target(ref_patient_data, reg.GetTransform());
+	SetTransformforCI_target(patientData, reg.GetTransform());
 }
 
 void vtk_test::slot_Tracker_Setup()

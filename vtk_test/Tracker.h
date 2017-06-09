@@ -57,8 +57,11 @@ public:
 	NDIAuroraTracker(int COMPort);
 	~NDIAuroraTracker(void);
 
+    std::vector<ToolInformationStruct> GetTransformationsAndStrays(); // only returns tools; use GetStrayMarkers() for strays
 	std::vector<ToolInformationStruct> GetTransformations();
 	ToolInformationStruct GetTransformation(int toolNumber);
+
+    int GetStrayMarkers(Position3dStruct &strayMarkers); // does NOT query hardware, uses last frame received. Returns number of strays
 	int getNumberOfTools();
 
 	//implementations of the virtual slots above in the interface class
@@ -79,6 +82,8 @@ private:
 	bool m_bWireless,
 		 m_bIsTracking,
 		 m_bResetHardware;
+
+    Position3dStruct m_StrayMarkers[NO_STRAYMARKERS]; // stray marker 3D positions
 
 	//holds the indices of active tools
 	std::list<int> m_ToolList;

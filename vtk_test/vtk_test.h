@@ -66,6 +66,7 @@ signals:
 	void sgn_NewProbePosition(double,double,double);
 	void sgn_NewCIPosition(double,double,double);
 	void sgn_NewMagPosition(double,double,double);
+    void sgn_NewSkullPosition(double, double, double);
 	void sgn_err(double,double);
 	void sgn_err_ang(double);
 	void sgn_WriteData();
@@ -102,6 +103,7 @@ private:
 	Eigen::Matrix4d		m_CItarget_transform;
 	Eigen::Matrix4d		m_CItool_transform;
 	Eigen::Matrix4d		m_probe_transform;
+    Eigen::Matrix4d     m_skull_transform;
 	Eigen::MatrixXd		CI_entry;
 	bool				flag_SetTarget;
 	AlignmentErrors		m_errors;

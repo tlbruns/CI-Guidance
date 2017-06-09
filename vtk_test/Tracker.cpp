@@ -154,10 +154,79 @@ NDIAuroraTracker::StopTracking()
 	m_bIsTracking = false;
 }
 
-int 
-NDIAuroraTracker::getNumberOfTools()
+int NDIAuroraTracker::GetStrayMarkers(Position3dStruct &strayMarkers)
+{
+    std::copy(m_StrayMarkers, m_StrayMarkers + sizeof(m_StrayMarkers), strayMarkers);
+    return pCommandHandling->m_nNoStrayMarkers;
+}
+
+int NDIAuroraTracker::getNumberOfTools()
 {
 	return m_ToolList.size();
+}
+
+std::vector<ToolInformationStruct> NDIAuroraTracker::GetTransformationsAndStrays()
+{
+    pCommandHandling->nGetTXTransformsAndStrays(false);
+    //int maxToolNumber = *std::max_element( m_ToolList.begin(), m_ToolList.end() );
+    int maxToolNumber = 3;
+    vector<ToolInformationStruct> transformations(maxToolNumber);
+
+    list<int>::iterator it;
+    size_t i = 0;
+    for (it = m_ToolList.begin(); it != m_ToolList.end(); it++)
+    {
+        if (pCommandHandling->m_dtHandleInformation[*it].Xfrms.ulFlags == TRANSFORM_VALID) {
+            ToolInformationStruct p;
+
+            if (pCommandHandling->m_dtHandleInformation[*it].Xfrms.ulFlags == TRANSFORM_VALID &&
+                !(pCommandHandling->m_dtHandleInformation[*it].Xfrms.fError == BAD_FLOAT)) {
+                p.x = pCommandHandling->m_dtHandleInformation[*it].Xfrms.translation.x;
+                p.y = pCommandHandling->m_dtHandleInformation[*it].Xfrms.translation.y;
+                p.z = pCommandHandling->m_dtHandleInformation[*it].Xfrms.translation.z;
+                p.q0 = pCommandHandling->m_dtHandleInformation[*it].Xfrms.rotation.q0;
+                p.qx = pCommandHandling->m_dtHandleInformation[*it].Xfrms.rotation.qx;
+                p.qy = pCommandHandling->m_dtHandleInformation[*it].Xfrms.rotation.qy;
+                p.qz = pCommandHandling->m_dtHandleInformation[*it].Xfrms.rotation.qz;
+                p.x1 = pCommandHandling->m_dtHandleInformation[*it].Mrkrs.mk1.x;
+                p.y1 = pCommandHandling->m_dtHandleInformation[*it].Mrkrs.mk1.y;
+                p.z1 = pCommandHandling->m_dtHandleInformation[*it].Mrkrs.mk1.z;
+                p.x2 = pCommandHandling->m_dtHandleInformation[*it].Mrkrs.mk2.x;
+                p.y2 = pCommandHandling->m_dtHandleInformation[*it].Mrkrs.mk2.y;
+                p.z2 = pCommandHandling->m_dtHandleInformation[*it].Mrkrs.mk2.z;
+                p.x3 = pCommandHandling->m_dtHandleInformation[*it].Mrkrs.mk3.x;
+                p.y3 = pCommandHandling->m_dtHandleInformation[*it].Mrkrs.mk3.y;
+                p.z3 = pCommandHandling->m_dtHandleInformation[*it].Mrkrs.mk3.z;
+                p.x4 = pCommandHandling->m_dtHandleInformation[*it].Mrkrs.mk4.x;
+                p.y4 = pCommandHandling->m_dtHandleInformation[*it].Mrkrs.mk4.y;
+                p.z4 = pCommandHandling->m_dtHandleInformation[*it].Mrkrs.mk4.z;
+            }
+            else {
+                p.x = 0;
+                p.y = 0;
+                p.z = 0;
+                p.q0 = 1;
+                p.qx = 0;
+                p.qy = 0;
+                p.qz = 0;
+                p.x1 = 0;
+                p.y1 = 0;
+                p.z1 = 0;
+                p.x2 = 0;
+                p.y2 = 0;
+                p.z2 = 0;
+                p.x3 = 0;
+                p.y3 = 0;
+                p.z3 = 0;
+                p.x4 = 0;
+                p.y4 = 0;
+                p.z4 = 0;
+            }
+
+            transformations[*it] = p;
+        }
+    }
+    return transformations;
 }
 
 vector<ToolInformationStruct>

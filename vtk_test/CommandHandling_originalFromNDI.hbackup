@@ -1,7 +1,4 @@
 /*****************************************************************
-MODIFIED BY TREVOR BRUNS (JUNE 2017): ADDED FUNCTION TO REQUEST
-STRAY MARKER POSITIONS
-
 Name:               CommandHandling.h
 
 Description:	This file is the header for the CommandHandling
@@ -112,7 +109,6 @@ public:
 	int nGetPortInformation(int nPortHandle);
 	int nStartTracking();
 	int nGetTXTransforms(bool bReportOOV);
-    int nGetTXTransformsAndStrays(bool bReportOOV); // TLB June 2017
 	int nGetBXTransforms(bool bReportOOV);
 	int nStopTracking();
 	int nGetAlerts(bool bNewAlerts);
@@ -137,12 +133,7 @@ Variables
 	HandleInformation
 		m_dtHandleInformation[NO_HANDLES];	/* Handle Information varaible - structure */
 
-    // TLB
-    Position3dStruct
-        m_StrayMarkers[NO_STRAYMARKERS]; /* Stray Marker 3D Position variable - structure */
-
-    int
-        m_nNoStrayMarkers, /* number of stray markers found in last frame */
+	int
 		m_nRefHandle; /* the handle for the tool acting as the reference tool */
 
 	DiagNewAlertFlags
