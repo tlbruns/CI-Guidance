@@ -174,9 +174,6 @@
     <ClInclude Include="GeneratedFiles\ui_Info.h">
       <Filter>Generated Files</Filter>
     </ClInclude>
-    <ClInclude Include="GeneratedFiles\ui_patient_registration.h">
-      <Filter>Generated Files</Filter>
-    </ClInclude>
     <ClInclude Include="MovingAverage.h">
       <Filter>Header Files</Filter>
     </ClInclude>

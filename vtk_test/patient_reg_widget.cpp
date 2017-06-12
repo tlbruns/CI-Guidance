@@ -19,6 +19,7 @@ Pat_Reg_Widget::Pat_Reg_Widget(const patient_data & ref_patient_data, QWidget *p
 	connect(ui->button_mk1_collection, SIGNAL(clicked()), this, SLOT(slot_onButton1Clicked()));
 	connect(ui->button_mk2_collection, SIGNAL(clicked()), this, SLOT(slot_onButton2Clicked()));
 	connect(ui->button_mk3_collection, SIGNAL(clicked()), this, SLOT(slot_onButton3Clicked()));
+    connect(ui->button_skull_collection, SIGNAL(clicked()), this, SLOT(slot_onButtonSkullClicked()));
 	connect(ui->button_finish, SIGNAL(clicked()), this, SLOT(slot_onRegister()));
 }
 
@@ -40,6 +41,11 @@ void Pat_Reg_Widget::StartCollection2()
 void Pat_Reg_Widget::StartCollection3()
 {
 	m_DataState = COLLECTING_3;
+}
+
+void Pat_Reg_Widget::StartCollectionSkull()
+{
+    m_DataState = COLLECTING_SKULL;
 }
 
 void Pat_Reg_Widget::slot_onTimer1()
@@ -82,6 +88,21 @@ void Pat_Reg_Widget::slot_onTimer3()
 		m_timer.setSingleShot(true);
 		m_timer.start();
 	}
+}
+
+void Pat_Reg_Widget::slot_onTimerSkull()
+{
+    if (++m_ticks == WAIT_TIME) {
+        ui->label_skull_msg->setText(QString("Collecting..."));
+        disconnect(&m_timer, SIGNAL(timeout()), this, SLOT(slot_onTimerNdi()));
+        StartCollectionSkull();
+    }
+    else {
+        ui->label_skull_msg->setText(QString("Collecting in ") + QString::number(WAIT_TIME - m_ticks) + QString(" seconds"));
+        m_timer.setInterval(1000);
+        m_timer.setSingleShot(true);
+        m_timer.start();
+    }
 }
 
 Pat_Reg_Widget::DataCollectingState Pat_Reg_Widget::Collect1(double x, double y, double z)
@@ -144,6 +165,21 @@ Pat_Reg_Widget::DataCollectingState Pat_Reg_Widget::Collect3(double x, double y,
 	}
 }
 
+Pat_Reg_Widget::DataCollectingState Pat_Reg_Widget::CollectSkull(double x, double y, double z)
+{
+    m_AverageSkull.AddMeasurement(x, y, z);
+    ui->progressBar_skull->setValue(m_AverageSkull.count());
+
+    if (m_AverageSkull.count() == DATA_COUNT) {
+        ui->label_skull_msg->setText(QString("Finished Collecting"));
+        std::tuple<double, double, double> xyz = m_AverageSkull.GetAverage();
+        return Pat_Reg_Widget::NOT_COLLECTING;
+    }
+    else {
+        return Pat_Reg_Widget::COLLECTING_SKULL;
+    }
+}
+
 bool isDataValid(double x, double y, double z)
 {
 	if (x == 0 && y == 0 && z == 0)
@@ -172,6 +208,16 @@ void Pat_Reg_Widget::slot_onNewProbePosition(double x, double y, double z)
 	default:
 		break;
 	}
+}
+
+void Pat_Reg_Widget::slot_onNewSkullPosition(double x, double y, double z)
+{
+    if (!isDataValid(x, y, z))
+        return;
+    else if (m_DataState != NOT_COLLECTING)
+        return;
+    else
+        m_DataState = CollectSkull(x, y, z);
 }
 
 void Pat_Reg_Widget::slot_onButton1Clicked()
@@ -214,6 +260,20 @@ void Pat_Reg_Widget::slot_onButton3Clicked()
 		connect( &m_timer, SIGNAL(timeout()), this, SLOT(slot_onTimer3()));
 		m_timer.start();
 	}
+}
+
+void Pat_Reg_Widget::slot_onButtonSkullClicked()
+{
+    if (m_DataState == NOT_COLLECTING) {
+        ui->progressBar_skull->setValue(0);
+        m_AverageSkull = PositionAverage();
+        m_ticks = 0;
+        m_timer.setInterval(1000);
+        m_timer.setSingleShot(true);
+        ui->label_skull_msg->setText(QString("Collecting in ") + QString::number(WAIT_TIME) + QString(" seconds"));
+        connect(&m_timer, SIGNAL(timeout()), this, SLOT(slot_onTimerSkull()));
+        m_timer.start();
+    }
 }
 
 void Pat_Reg_Widget::slot_onRegister()

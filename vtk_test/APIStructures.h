@@ -56,6 +56,9 @@ Defines
 /* number of handles the system can support */
 #define NO_HANDLES				0xFF
 
+/* number of stray markers the system can support */
+#define NO_STRAYMARKERS         50  // TLB June 2017
+
 /* Reply definitions */
 #define REPLY_ERROR				0x00
 #define REPLY_OKAY				0x01

@@ -7,6 +7,7 @@
 #include <qelapsedtimer.h>
 #include <qlabel.h>
 #include <qfile.h>
+#include <vector>
 #include "Tracker.h"
 #include <vtkActor.h>
 #include <Conversions.h>
@@ -70,6 +71,7 @@ signals:
 	void sgn_NewProbePosition(double,double,double);
 	void sgn_NewCIPosition(double,double,double);
 	void sgn_NewMagPosition(double,double,double);
+    void sgn_NewSkullPosition(double, double, double);
 	void sgn_err(double,double);
 	void sgn_err_ang(double);
 	void sgn_WriteData();
@@ -95,21 +97,36 @@ private:
 	QVTKWidget		*m_pQVTK_side_inset;
 	QFile			*pDatalogFile;
 	int				m_time;
-	vtkSmartPointer<vtkRenderer>    m_pRenderer_oblique;
+  int           numFiducialActors;
+  
+  NDIAuroraTracker	*m_tracker;
+  
+	vtkSmartPointer<vtkRenderer>  m_pRenderer_oblique;
 	vtkSmartPointer<vtkRenderer>	m_pRenderer_top;
 	vtkSmartPointer<vtkRenderer>	m_pRenderer_top_inset;
 	vtkSmartPointer<vtkRenderer>	m_pRenderer_front;
 	vtkSmartPointer<vtkRenderer>	m_pRenderer_front_inset;
 	vtkSmartPointer<vtkRenderer>	m_pRenderer_side;
 	vtkSmartPointer<vtkRenderer>	m_pRenderer_side_inset;
-	vtkSmartPointer<vtkActor>		  m_pActor_probe;
-	vtkSmartPointer<vtkActor>		  m_pActor_CItool;
-	vtkSmartPointer<vtkActor>		  m_pActor_CItarget;
-	NDIAuroraTracker	*m_tracker;
+
+	vtkSmartPointer<vtkActor>		m_pActor_probe;
+	vtkSmartPointer<vtkActor>		m_pActor_CItool;
+	vtkSmartPointer<vtkActor>		m_pActor_CItarget;
+  std::vector<vtkSmartPointer<vtkActor>> m_pActor_fiducials;
+
+  vtkSmartPointer<vtkTransform>   pvtk_T_probe;
+  vtkSmartPointer<vtkTransform>   pvtk_T_CItool;
+  std::vector<vtkSmartPointer<vtkTransform>> pvtk_T_fiducials;
+
+	NDIAuroraTracker	m_tracker;
+  Position3dStruct  m_strayMarkers[NO_STRAYMARKERS];
+  int               m_numStrays;
+
 	RotationMatrix		dtRotMatrix;
 	Eigen::Matrix4d		m_CItarget_transform;
 	Eigen::Matrix4d		m_CItool_transform;
 	Eigen::Matrix4d		m_probe_transform;
+    Eigen::Matrix4d     m_skull_transform;
 	Eigen::MatrixXd		CI_entry;
 	bool				flag_SetTarget;
 	AlignmentErrors		m_errors;

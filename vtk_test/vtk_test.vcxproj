@@ -282,7 +282,6 @@
     </CustomBuild>
     <ClInclude Include="GeneratedFiles\ui_Demo.h" />
     <ClInclude Include="GeneratedFiles\ui_Info.h" />
-    <ClInclude Include="GeneratedFiles\ui_patient_registration.h" />
     <ClInclude Include="GeneratedFiles\ui_vtk_test.h" />
     <CustomBuild Include="infowidget.h">
       <AdditionalInputs Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">$(QTDIR)\bin\moc.exe;%(FullPath)</AdditionalInputs>
