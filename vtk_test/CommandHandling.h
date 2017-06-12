@@ -137,12 +137,13 @@ Variables
 	HandleInformation
 		m_dtHandleInformation[NO_HANDLES];	/* Handle Information varaible - structure */
 
-    // TLB
-    Position3dStruct
-        m_StrayMarkers[NO_STRAYMARKERS]; /* Stray Marker 3D Position variable - structure */
+    // TLB start
+    Position3dStruct m_StrayMarkers[NO_STRAYMARKERS]; /* Stray Marker 3D Position variable - structure */
+    int m_nNoStrayMarkers; /* number of stray markers found in last frame */
+    bool m_StrayMarkersOov[NO_STRAYMARKERS]; /* flags specifying if markers are out of volume (ONLY USE IF 'bReportOOV' IS SET TRUE!) */
+    // TLB end
 
     int
-        m_nNoStrayMarkers, /* number of stray markers found in last frame */
 		m_nRefHandle; /* the handle for the tool acting as the reference tool */
 
 	DiagNewAlertFlags

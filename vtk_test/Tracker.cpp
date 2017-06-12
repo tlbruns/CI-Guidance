@@ -156,7 +156,8 @@ NDIAuroraTracker::StopTracking()
 
 int NDIAuroraTracker::GetStrayMarkers(Position3dStruct &strayMarkers)
 {
-    std::copy(m_StrayMarkers, m_StrayMarkers + sizeof(m_StrayMarkers), strayMarkers);
+    memcpy(&strayMarkers, pCommandHandling->m_StrayMarkers, sizeof(pCommandHandling->m_StrayMarkers));
+    //std::copy(m_StrayMarkers, m_StrayMarkers + sizeof(m_StrayMarkers), strayMarkers);
     return pCommandHandling->m_nNoStrayMarkers;
 }
 

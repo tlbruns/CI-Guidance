@@ -1784,19 +1784,30 @@ int CCommandHandling::nGetTXTransformsAndStrays(bool bReturn0x0800Option)
         /* Reply Component: Reply Option 1000 Data */
 
         // number of markers
-        m_nNoStrayMarkers = uASCIIToHex(pszTransformInfo, 2);
+        int totalStrays = uASCIIToHex(pszTransformInfo, 2); // always includes any that are out of volume as well
+        pszTransformInfo += 2;
 
-        if (m_nNoStrayMarkers)
+        if (totalStrays)
         {
-            pszTransformInfo += 2;
 
             // out of volume bit flags
             // each character is a ascii hex value where each of the 4 bits is the oov flag for a marker (little endian)
-            int nOovSize = (m_nNoStrayMarkers + 3) / 4; // integer division by 4 with rounding up
-            //char oovBuffer[NO_STRAYMARKERS/4];
+            int nOovSize = (totalStrays + 3) / 4; // integer division by 4 with rounding up
+            char oovBuffer[NO_STRAYMARKERS/4 + 1];
+            memcpy(oovBuffer, pszTransformInfo, nOovSize);
+            unsigned int uOov = uASCIIToHex(oovBuffer, nOovSize); // convert ASCII chars to the equivalent unsigned integer
 
+            memset(m_StrayMarkers, 0, sizeof(m_StrayMarkers)); // reset array elements to false
+            int totalOov = 0; // total number of markers that are out of volume
+            for (int i = 0; i < totalStrays; i++)
+            {
+                m_StrayMarkersOov[i] = uOov & (1 << i); // bit mask to read out each flag
+                totalOov += m_StrayMarkersOov[i]; // keep track of the number of OOV markers
+            }
             pszTransformInfo += nOovSize;
 
+            m_nNoStrayMarkers = bReturn0x0800Option ? totalStrays : (totalStrays - totalOov); // OOV positions only sent if option is set
+          
             // stray marker positions
             for (int i = 0; i < m_nNoStrayMarkers; i++)
             {

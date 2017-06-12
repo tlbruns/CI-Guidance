@@ -6,6 +6,7 @@
  VTK_MODULE_INIT(vtkRenderingOpenGL);
  VTK_MODULE_INIT(vtkInteractionStyle);
 
+#include "Tracker.h"
 #include <qscreen.h>
 #include <QVTKWidget.h>
 #include <qfiledialog.h>
@@ -17,6 +18,7 @@
 #include <vtkRenderWindow.h>
 #include <vtkOBJReader.h>
 #include <vtkSTLReader.h>
+#include <vtkPolyData.h>
 #include <vtkPolyDataMapper.h>
 #include <Conversions.h>
 #include <vtkTransform.h>
@@ -24,6 +26,7 @@
 #include <vtkProperty.h>
 #include <vtkTriangleFilter.h>
 #include <vtkStripper.h>
+#include <vtkSphereSource.h>
 #include <math.h>
 #include <Eigen/Core>
 #include <Eigen/Dense>
@@ -51,6 +54,7 @@ vtk_test::vtk_test(QWidget *parent)
 	m_time(0),
 	m_tracker(TRACKER_COMPORT),
 	m_frames(0),
+    numFiducialActors(4),
 	flag_SetTarget(FALSE),
 	m_CItarget_transform(Matrix4d::Identity()),
 	m_CItool_transform(Matrix4d::Identity()),
@@ -280,6 +284,33 @@ void vtk_test::Initialize()
 	m_pRenderer_front->AddActor(pActor_probe);
 	m_pRenderer_side->AddActor(pActor_probe);
 
+    double colorFiducials[] = { 0.81, 0.37, 0.08 }; // orange
+    for (int i = 0; i < numFiducialActors; i++) {
+        vtkSmartPointer<vtkSphereSource> sphereSource = vtkSmartPointer<vtkSphereSource>::New();
+        sphereSource->SetCenter(0.0, 0.0, 5.0*i);
+        sphereSource->SetRadius(10.0);
+
+        vtkSmartPointer<vtkPolyDataMapper> mapper = vtkSmartPointer<vtkPolyDataMapper>::New();
+        mapper->SetInputConnection(sphereSource->GetOutputPort());
+
+        vtkSmartPointer<vtkActor> actor = vtkSmartPointer<vtkActor>::New();
+        actor->GetProperty()->SetColor(colorFiducials);
+        actor->SetMapper(mapper);
+        
+        m_pActor_fiducials.push_back(actor);
+        m_pRenderer_top->AddActor(m_pActor_fiducials.at(i));
+        m_pRenderer_oblique->AddActor(m_pActor_fiducials.at(i));
+        m_pRenderer_front->AddActor(m_pActor_fiducials.at(i));
+        m_pRenderer_side->AddActor(m_pActor_fiducials.at(i));
+
+        vtkSmartPointer<vtkTransform> transform = vtkSmartPointer<vtkTransform>::New();
+        pvtk_T_fiducials.push_back(transform);
+    }
+    
+    pvtk_T_probe = vtkSmartPointer<vtkTransform>::New();
+    pvtk_T_CItool = vtkSmartPointer<vtkTransform>::New();
+    
+
 	m_pActor_CItarget = pActor_CI_target;
 	m_pActor_CItool = pActor_CI_tool;
 	m_pActor_probe = pActor_probe;
@@ -302,11 +333,9 @@ void vtk_test::slot_onGUITimer()
 	T.resize(NUM_TRACKED_TOOLS + 1);
 	Trans_final.resize(NUM_TRACKED_TOOLS + 1);
 
-	vtkSmartPointer<vtkTransform> pvtk_T_probe = vtkSmartPointer<vtkTransform>::New();
-	vtkSmartPointer<vtkTransform> pvtk_T_CItool = vtkSmartPointer<vtkTransform>::New();
-
 	// get transformations from tracker and place in eigen matrices
-	std::vector<ToolInformationStruct> tools = m_tracker.GetTransformations();
+    std::vector<ToolInformationStruct> tools = m_tracker.GetTransformationsAndStrays();
+    //std::vector<ToolInformationStruct> tools = m_tracker.GetTransformations();
 
 	if (TRACKER_SIMULATE) {
 		quat_Polaris[1] = Eigen::Quaterniond(1, 0, 0, 0);
@@ -319,13 +348,30 @@ void vtk_test::slot_onGUITimer()
 		m_pActor_CItarget->SetUserTransform(pvtk_T_CItarget);
 	}
 	else {
+        // tool transformations
 		for (int toolnum = 1; toolnum <= NUM_TRACKED_TOOLS; toolnum++) {
 			quat_Polaris[toolnum] = Eigen::Quaterniond(tools[toolnum].q0, tools[toolnum].qx, tools[toolnum].qy, tools[toolnum].qz);
 			p[toolnum](0) = tools[toolnum].x;
 			p[toolnum](1) = tools[toolnum].y;
 			p[toolnum](2) = tools[toolnum].z;
 		}
+
+        // stray markers positions
+        m_numStrays = m_tracker.GetStrayMarkers(*m_strayMarkers);
+
+        //if (m_frames%5 == 0) {
+        //    printf("\n");
+        //    for (int i = 0; i < m_numStrays; i++) {
+        //        printf("mk%i = [%.2f, %.2f, %.2f]\n", i, m_strayMarkers[i].x, m_strayMarkers[i].y, m_strayMarkers[i].z);
+        //    }
+        //}
 	}
+
+    Eigen::Matrix4d Polaris_sim_trans(4, 4);
+    Polaris_sim_trans << 0,-1, 0, 0, // note: inverse is equal to itself for this matrix
+                        -1, 0, 0, 0,
+                         0, 0,-1, 0,
+                         0, 0, 0, 1;
 
 	// convert quaternion to rotation matrix and combine with translation into a transformation matrix
 	for (int toolnum = 1; toolnum <= NUM_TRACKED_TOOLS; toolnum++) {
@@ -333,15 +379,22 @@ void vtk_test::slot_onGUITimer()
 		T[toolnum] = Eigen::Matrix4d::Identity();
 		T[toolnum].block<3, 3>(0, 0) = R[toolnum];
 		T[toolnum].block<3, 1>(0, 3) = p[toolnum];
-		Eigen::Matrix4d Polaris_sim_trans(4, 4);
-		Polaris_sim_trans << 0, -1,  0, 0, // note: inverse is equal to itself for this matrix
-							-1,  0,  0, 0,
-							 0,  0, -1, 0,
-							 0,  0,  0, 1;
 
 		// apply similarity transform
 		Trans_final[toolnum] = Polaris_sim_trans*T[toolnum] * Polaris_sim_trans.inverse();
 	}
+
+    // update fiducial actor positions
+    Eigen::Matrix4d T_fiducial; 
+    Eigen::Matrix4d T_fiducial_final;
+    for (int i = 0; i < numFiducialActors; i++) {
+        T_fiducial = Eigen::Matrix4d::Identity();
+        T_fiducial.block<3, 1>(0, 3) = Eigen::Vector3d(m_strayMarkers[i].x, m_strayMarkers[i].y, m_strayMarkers[i].z);
+        T_fiducial = Polaris_sim_trans*T_fiducial * Polaris_sim_trans.inverse();
+        T_fiducial_final = T_fiducial.transpose();
+        pvtk_T_fiducials.at(i)->SetMatrix(T_fiducial_final.data());
+        m_pActor_fiducials.at(i)->SetUserTransform(pvtk_T_fiducials.at(i));
+    }
 
 	// Update actors with new transforms
     m_probe_transform = Trans_final[1];
