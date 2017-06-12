@@ -113,6 +113,15 @@
     <ClCompile Include="GeneratedFiles\Release\moc_demo_widget.cpp">
       <Filter>Generated Files\Release</Filter>
     </ClCompile>
+    <ClCompile Include="GeneratedFiles\Debug\moc_TrackerSetup.cpp">
+      <Filter>Generated Files\Debug</Filter>
+    </ClCompile>
+    <ClCompile Include="GeneratedFiles\Release\moc_TrackerSetup.cpp">
+      <Filter>Generated Files\Release</Filter>
+    </ClCompile>
+    <ClCompile Include="TrackerSetup.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <CustomBuild Include="vtk_test.h">
@@ -143,6 +152,12 @@
       <Filter>Form Files</Filter>
     </CustomBuild>
     <CustomBuild Include="demo_widget.h">
+      <Filter>Header Files</Filter>
+    </CustomBuild>
+    <CustomBuild Include="TrackerSetup.ui">
+      <Filter>Form Files</Filter>
+    </CustomBuild>
+    <CustomBuild Include="TrackerSetup.h">
       <Filter>Header Files</Filter>
     </CustomBuild>
   </ItemGroup>
@@ -187,6 +202,9 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="GeneratedFiles\ui_Demo.h">
+      <Filter>Generated Files</Filter>
+    </ClInclude>
+    <ClInclude Include="GeneratedFiles\ui_TrackerSetup.h">
       <Filter>Generated Files</Filter>
     </ClInclude>
   </ItemGroup>

@@ -33,11 +33,15 @@ public:
     QAction *actionRegister_Patient;
     QAction *actionDemo;
     QAction *actionCenter_Target;
+    QAction *actionTracker_Init;
+    QAction *actionTracker_Stop;
+    QAction *actionTracker_Setup_2;
     QWidget *centralWidget;
     QGridLayout *gridLayout_3;
     QGridLayout *gridlayout;
     QMenuBar *menuBar;
     QMenu *menuFile;
+    QMenu *menuTracker;
     QToolBar *mainToolBar;
     QStatusBar *statusBar;
 
@@ -58,6 +62,12 @@ public:
         actionDemo->setObjectName(QStringLiteral("actionDemo"));
         actionCenter_Target = new QAction(vtk_testClass);
         actionCenter_Target->setObjectName(QStringLiteral("actionCenter_Target"));
+        actionTracker_Init = new QAction(vtk_testClass);
+        actionTracker_Init->setObjectName(QStringLiteral("actionTracker_Init"));
+        actionTracker_Stop = new QAction(vtk_testClass);
+        actionTracker_Stop->setObjectName(QStringLiteral("actionTracker_Stop"));
+        actionTracker_Setup_2 = new QAction(vtk_testClass);
+        actionTracker_Setup_2->setObjectName(QStringLiteral("actionTracker_Setup_2"));
         centralWidget = new QWidget(vtk_testClass);
         centralWidget->setObjectName(QStringLiteral("centralWidget"));
         gridLayout_3 = new QGridLayout(centralWidget);
@@ -74,9 +84,11 @@ public:
         vtk_testClass->setCentralWidget(centralWidget);
         menuBar = new QMenuBar(vtk_testClass);
         menuBar->setObjectName(QStringLiteral("menuBar"));
-        menuBar->setGeometry(QRect(0, 0, 1016, 31));
+        menuBar->setGeometry(QRect(0, 0, 1016, 26));
         menuFile = new QMenu(menuBar);
         menuFile->setObjectName(QStringLiteral("menuFile"));
+        menuTracker = new QMenu(menuBar);
+        menuTracker->setObjectName(QStringLiteral("menuTracker"));
         vtk_testClass->setMenuBar(menuBar);
         mainToolBar = new QToolBar(vtk_testClass);
         mainToolBar->setObjectName(QStringLiteral("mainToolBar"));
@@ -86,9 +98,13 @@ public:
         vtk_testClass->setStatusBar(statusBar);
 
         menuBar->addAction(menuFile->menuAction());
-        menuFile->addAction(actionTracker_Setup);
+        menuBar->addAction(menuTracker->menuAction());
         menuFile->addAction(actionRegister_Patient);
         menuFile->addAction(actionClose);
+        menuTracker->addAction(actionTracker_Init);
+        menuTracker->addAction(actionTracker_Stop);
+        menuTracker->addSeparator();
+        menuTracker->addAction(actionTracker_Setup_2);
         mainToolBar->addAction(actionDemo);
         mainToolBar->addAction(actionCenter_Target);
 
@@ -107,7 +123,11 @@ public:
         actionRegister_Patient->setText(QApplication::translate("vtk_testClass", "Register Patient", 0));
         actionDemo->setText(QApplication::translate("vtk_testClass", "Demo", 0));
         actionCenter_Target->setText(QApplication::translate("vtk_testClass", "Center Target", 0));
+        actionTracker_Init->setText(QApplication::translate("vtk_testClass", "Init", 0));
+        actionTracker_Stop->setText(QApplication::translate("vtk_testClass", "Stop", 0));
+        actionTracker_Setup_2->setText(QApplication::translate("vtk_testClass", "Setup", 0));
         menuFile->setTitle(QApplication::translate("vtk_testClass", "File", 0));
+        menuTracker->setTitle(QApplication::translate("vtk_testClass", "Tracker", 0));
     } // retranslateUi
 
 };
