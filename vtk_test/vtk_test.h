@@ -97,28 +97,29 @@ private:
 	QVTKWidget		*m_pQVTK_side_inset;
 	QFile			*pDatalogFile;
 	int				m_time;
-  int           numFiducialActors;
+    int           numFiducialActors;
   
-  NDIAuroraTracker	*m_tracker;
-  
-	vtkSmartPointer<vtkRenderer>  m_pRenderer_oblique;
-	vtkSmartPointer<vtkRenderer>	m_pRenderer_top;
-	vtkSmartPointer<vtkRenderer>	m_pRenderer_top_inset;
-	vtkSmartPointer<vtkRenderer>	m_pRenderer_front;
-	vtkSmartPointer<vtkRenderer>	m_pRenderer_front_inset;
-	vtkSmartPointer<vtkRenderer>	m_pRenderer_side;
-	vtkSmartPointer<vtkRenderer>	m_pRenderer_side_inset;
+    NDIAuroraTracker	*m_tracker;
+    //NDIAuroraTracker	m_tracker;
+
+    vtkSmartPointer<vtkRenderer>  m_pRenderer_oblique;
+    vtkSmartPointer<vtkRenderer>	m_pRenderer_top;
+    vtkSmartPointer<vtkRenderer>	m_pRenderer_top_inset;
+    vtkSmartPointer<vtkRenderer>	m_pRenderer_front;
+    vtkSmartPointer<vtkRenderer>	m_pRenderer_front_inset;
+    vtkSmartPointer<vtkRenderer>	m_pRenderer_side;
+    vtkSmartPointer<vtkRenderer>	m_pRenderer_side_inset;
 
 	vtkSmartPointer<vtkActor>		m_pActor_probe;
 	vtkSmartPointer<vtkActor>		m_pActor_CItool;
 	vtkSmartPointer<vtkActor>		m_pActor_CItarget;
-  std::vector<vtkSmartPointer<vtkActor>> m_pActor_fiducials;
+    std::vector<vtkSmartPointer<vtkActor>> m_pActor_fiducials;
 
-  vtkSmartPointer<vtkTransform>   pvtk_T_probe;
-  vtkSmartPointer<vtkTransform>   pvtk_T_CItool;
-  std::vector<vtkSmartPointer<vtkTransform>> pvtk_T_fiducials;
+    vtkSmartPointer<vtkTransform>   pvtk_T_probe;
+    vtkSmartPointer<vtkTransform>   pvtk_T_CItool;
+    std::vector<vtkSmartPointer<vtkTransform>> pvtk_T_fiducials;
 
-	NDIAuroraTracker	m_tracker;
+	
   Position3dStruct  m_strayMarkers[NO_STRAYMARKERS];
   int               m_numStrays;
 

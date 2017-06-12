@@ -350,7 +350,8 @@ void vtk_test::slot_onGUITimer()
 	T.resize(NUM_TRACKED_TOOLS + 1);
 	Trans_final.resize(NUM_TRACKED_TOOLS + 1);
 
-  std::vector<ToolInformationStruct> tools = m_tracker.GetTransformationsAndStrays();
+  //std::vector<ToolInformationStruct> tools = m_tracker.GetTransformationsAndStrays();
+  std::vector<ToolInformationStruct> tools = m_tracker->GetTransformationsAndStrays();
   //std::vector<ToolInformationStruct> tools = m_tracker.GetTransformations();
 
 	if (TRACKER_SIMULATE) {
@@ -373,7 +374,7 @@ void vtk_test::slot_onGUITimer()
 		}
 
         // stray markers positions
-        m_numStrays = m_tracker.GetStrayMarkers(*m_strayMarkers);
+        m_numStrays = m_tracker->GetStrayMarkers(*m_strayMarkers);
 
         //if (m_frames%5 == 0) {
         //    printf("\n");
