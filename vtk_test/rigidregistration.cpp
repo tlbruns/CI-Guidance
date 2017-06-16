@@ -3,6 +3,9 @@
 #include <Eigen/SVD>
 #include <Eigen/Geometry>
 #include <iostream>
+#include <vector>
+#include <algorithm>
+#include <numeric>
 #include <cmath>
 
 #ifndef NDEBUG
@@ -29,12 +32,22 @@ MatrixXd RigidRegistration::GetTransform() const
     return m_transform;
 }
 
-void print_matrix(Eigen::MatrixXd& mat, const char* str)
+Eigen::ArrayXd RigidRegistration::GetIndexMatch() const
+{
+    return m_indexMatch;
+}
+
+Eigen::MatrixXd RigidRegistration::getPtsMatch() const
+{
+    return m_ptsMatch;
+}
+
+void print_matrix(MatrixXd& mat, const char* str)
 {
     std::cout << str << ":" << std::endl << mat << std::endl;
 }
 
-void point_register(MatrixXd ptsX, MatrixXd ptsY, RigidRegistration& reg)
+void pointRegister(MatrixXd ptsX, MatrixXd ptsY, RigidRegistration& reg)
 {
     if (ptsX.rows() != ptsY.rows()) {
         qDebug() << "Both vectors of points must have the same number of rows";
@@ -91,4 +104,125 @@ void point_register(MatrixXd ptsX, MatrixXd ptsY, RigidRegistration& reg)
     reg.m_transform = MatrixXd::Identity(4,4);
     reg.m_transform.block(0,0,3,3) = R;
     reg.m_transform.block(0,3,3,1) = t;
+}
+
+void pointRegisterOutliers(MatrixXd ptsX, MatrixXd ptsY, RigidRegistration & reg)
+{
+    // Finds the set of points in ptsY that corresponds to those in ptsX (rejecting outlier points) 
+    // and computes registration: T*ptsX = ptsY
+    // 
+    // Each column of ptsX & ptsY defines a point
+
+    /* 
+    check dimensions 
+    */
+
+    if (ptsX.rows() != ptsY.rows()) {
+        qDebug() << "Both vectors of points must have the same number of rows (same dimension)";
+    }
+
+    if (ptsX.cols() > ptsY.cols()) {
+        qDebug() << "Y must have at least as many points as X";
+    }
+
+    int dim = ptsX.rows();  // dimension of the space
+    int Xnum = ptsX.cols(); // number of points in X
+    int Ynum = ptsX.cols(); // number of points in Y
+
+
+    /* 
+    compute registrations for all permutations of points in Y that could match X 
+    */
+
+    MatrixXd iPerms; // each element is the index of a point in X; each column is unique set of points
+    createPermutations(Ynum, Xnum, iPerms); // create list (iPerms) of all choices of points
+
+    MatrixXd testY(dim, Xnum); // holds the current set being tested
+    std::vector<int> indexBest(Ynum); // choice of indices that resulted in FREbest
+
+    reg.m_FRE = 5000.0; // current best FRE (initialize to arbitrarily large number)
+    reg.m_transform = MatrixXd::Identity(4, 4);
+
+    for (int ii = 0; ii < iPerms.rows(); ++ii)
+    {
+        // assemble set of points to test
+        for (int jj = 0; jj < Xnum; ++jj)
+        {
+            testY.col(jj) = ptsY.col(iPerms(ii, jj));
+        }
+
+        // get the De-meaned vector lists
+        MatrixXd xbar = ptsX.rowwise().mean();
+        MatrixXd ybar = testY.rowwise().mean();
+        MatrixXd xtilde = ptsX - xbar.replicate(1, Xnum);
+        MatrixXd ytilde = testY - ybar.replicate(1, Xnum);
+
+        // covariance matrix
+        MatrixXd Hcov = xtilde*(ytilde.transpose());
+
+        Eigen::JacobiSVD<MatrixXd> svdH = Hcov.jacobiSvd(Eigen::ComputeFullU | Eigen::ComputeFullV);
+        MatrixXd U = svdH.matrixU();
+        MatrixXd V = svdH.matrixV();
+        VectorXd Dvec(dim);
+        Dvec = VectorXd::Constant(dim, 1.0);
+        Dvec(dim - 1) = (V*U).determinant();
+
+        MatrixXd D = MatrixXd::Zero(dim, dim);
+        for (int i = 0; i < dim; ++i) {
+            D(i, i) = Dvec(i);
+        }
+
+        MatrixXd R = V*D*U.transpose();
+        MatrixXd t = ybar - R*xbar;
+
+        MatrixXd FREcomponents = R*ptsX + t.replicate(1, Xnum) - ptsY;
+        double FRE = sqrt(FREcomponents.array().pow(2).colwise().sum().mean());
+
+        // check if better than current best
+        if (FRE < reg.m_FRE)
+        {
+            reg.m_FRE = FRE;
+            reg.m_transform.block(0, 0, 3, 3) = R;
+            reg.m_transform.block(0, 3, 3, 1) = t;
+            reg.m_ptsMatch = testY;
+            reg.m_indexMatch = iPerms.row(ii);
+        }   
+    }
+}
+
+void createPermutations(int n, int k, MatrixXd & iPerms)
+{
+    /*
+        Returns a list of all n-choose-k permutations
+    */
+
+    std::vector<int> x(k); // create initial vector for permutations
+    std::iota(x.begin(), x.end(), 0); // x = [0 1 2 ... n]
+
+    iPerms.resize(numPermutations(n, k), k); // each row is unique permutation
+
+    int row = 0;
+    do
+    {
+        for (int col = 0; col < k; col++)
+        {
+            iPerms(row, col) = x[col];
+        }
+       
+        std::reverse(x.begin() + k, x.end());
+        ++row;
+    } while (std::next_permutation(x.begin(), x.end()));
+}
+
+int factorial(int n)
+{
+    if (n > 1)
+        return n * factorial(n - 1);
+    else
+        return 1;
+}
+
+int numPermutations(int n, int k)
+{
+    return (factorial(n) / factorial(n - k));
 }

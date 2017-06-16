@@ -39,7 +39,7 @@ public:
         comboBox_COM->setGeometry(QRect(170, 50, 41, 22));
         label = new QLabel(TrackerSetup);
         label->setObjectName(QStringLiteral("label"));
-        label->setGeometry(QRect(120, 10, 161, 31));
+        label->setGeometry(QRect(120, 10, 181, 31));
         QFont font;
         font.setPointSize(12);
         label->setFont(font);

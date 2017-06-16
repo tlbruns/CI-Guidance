@@ -2,6 +2,7 @@
 #define PATIENT_REG_WIDGET_H
 
 #include <QDialog>
+#include <qvector.h>
 #include "ui_patient_registration.h"
 #include <qtimer.h>
 #include "PositionAverage.h"
@@ -19,6 +20,7 @@ public:
     explicit Pat_Reg_Widget(const patient_data & ref_patient_data, QWidget *parent = 0);
     ~Pat_Reg_Widget();
 	void RegisterCollectedData(const patient_data & ref_patient_data);
+    void RegisterSkull();
 	RigidRegistration	GetRegistration() const;
 
 private:
@@ -38,7 +40,7 @@ private:
 	DataCollectingState Collect1(double,double,double);
 	DataCollectingState Collect2(double,double,double);
 	DataCollectingState Collect3(double,double,double);
-    DataCollectingState CollectSkull(double, double, double);
+    DataCollectingState CollectSkull(Eigen::Matrix3Xd);
 
 public slots:
 	void slot_onButton1Clicked();
@@ -50,7 +52,7 @@ public slots:
 	void slot_onTimer3();
     void slot_onTimerSkull();
     void slot_onNewProbePosition(double, double, double);
-    void slot_onNewSkullPosition(double, double, double);
+    void slot_onNewFiducialPositions(Eigen::Matrix3Xd &, int);
 	void slot_onRegister();
 	void slot_onSaveandFinish();
 
@@ -58,13 +60,18 @@ private:
 	Ui::PatientRegistration	*ui;
 	QTimer				     m_timer;
 	int						 m_ticks;
-	PositionAverage			m_AverageMk1;
-	PositionAverage			m_AverageMk2;
-	PositionAverage			m_AverageMk3;
-    PositionAverage         m_AverageSkull;
-	DataCollectingState		m_DataState;
-	patient_data			m_patient_data;
-	RigidRegistration		m_registration;
+	PositionAverage			 m_AverageMk1;
+	PositionAverage			 m_AverageMk2;
+	PositionAverage			 m_AverageMk3;
+    const qint8              m_maxPossibleStrays; // max number of stray markers
+    const float              m_matchingTolerance; // tolerance in [mm] that determines stray marker correspondence
+    QVector<PositionAverage> m_AverageSkull;
+	DataCollectingState		 m_DataState;
+	patient_data			 m_patient_data;
+	RigidRegistration		 m_registration;
+    bool isDataValid(double x, double y, double z);
+    bool isDataValid(Eigen::Matrix3Xd testMatrix);
+    bool isMatch(Eigen::Vector3d point1, Eigen::Vector3d point2, double matchingTolerance);
 };
 
 #endif // PATIENT_REG_WIDGET_H

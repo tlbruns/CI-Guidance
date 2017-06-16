@@ -41,14 +41,14 @@
      <x>0</x>
      <y>0</y>
      <width>1016</width>
-     <height>26</height>
+     <height>31</height>
     </rect>
    </property>
    <widget class="QMenu" name="menuFile">
     <property name="title">
      <string>File</string>
     </property>
-    <addaction name="actionRegister_Patient"/>
+    <addaction name="actionDemo"/>
     <addaction name="actionClose"/>
    </widget>
    <widget class="QMenu" name="menuTracker">
@@ -70,7 +70,7 @@
    <attribute name="toolBarBreak">
     <bool>false</bool>
    </attribute>
-   <addaction name="actionDemo"/>
+   <addaction name="actionRegister_Patient"/>
    <addaction name="actionCenter_Target"/>
   </widget>
   <widget class="QStatusBar" name="statusBar"/>

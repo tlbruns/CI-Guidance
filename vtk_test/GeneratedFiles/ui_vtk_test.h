@@ -84,7 +84,7 @@ public:
         vtk_testClass->setCentralWidget(centralWidget);
         menuBar = new QMenuBar(vtk_testClass);
         menuBar->setObjectName(QStringLiteral("menuBar"));
-        menuBar->setGeometry(QRect(0, 0, 1016, 26));
+        menuBar->setGeometry(QRect(0, 0, 1016, 31));
         menuFile = new QMenu(menuBar);
         menuFile->setObjectName(QStringLiteral("menuFile"));
         menuTracker = new QMenu(menuBar);
@@ -99,13 +99,13 @@ public:
 
         menuBar->addAction(menuFile->menuAction());
         menuBar->addAction(menuTracker->menuAction());
-        menuFile->addAction(actionRegister_Patient);
+        menuFile->addAction(actionDemo);
         menuFile->addAction(actionClose);
         menuTracker->addAction(actionTracker_Init);
         menuTracker->addAction(actionTracker_Stop);
         menuTracker->addSeparator();
         menuTracker->addAction(actionTracker_Setup_2);
-        mainToolBar->addAction(actionDemo);
+        mainToolBar->addAction(actionRegister_Patient);
         mainToolBar->addAction(actionCenter_Target);
 
         retranslateUi(vtk_testClass);

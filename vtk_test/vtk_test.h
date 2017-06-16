@@ -71,6 +71,7 @@ signals:
 	void sgn_NewProbePosition(double,double,double);
 	void sgn_NewCIPosition(double,double,double);
 	void sgn_NewMagPosition(double,double,double);
+    void sgn_NewFiducialPositions(Eigen::Matrix3Xd &, int);
     void sgn_NewSkullPosition(double, double, double);
 	void sgn_err(double,double);
 	void sgn_err_ang(double);
@@ -97,7 +98,7 @@ private:
 	QVTKWidget		*m_pQVTK_side_inset;
 	QFile			*pDatalogFile;
 	int				m_time;
-    int           numFiducialActors;
+    int             numFiducialActors;
   
     NDIAuroraTracker	*m_tracker;
     //NDIAuroraTracker	m_tracker;
@@ -119,9 +120,8 @@ private:
     vtkSmartPointer<vtkTransform>   pvtk_T_CItool;
     std::vector<vtkSmartPointer<vtkTransform>> pvtk_T_fiducials;
 
-	
-  Position3dStruct  m_strayMarkers[NO_STRAYMARKERS];
-  int               m_numStrays;
+    Eigen::Matrix3Xd  m_strayMarkers;
+    qint8             m_numStrayMarkers;
 
 	RotationMatrix		dtRotMatrix;
 	Eigen::Matrix4d		m_CItarget_transform;

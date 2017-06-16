@@ -68,6 +68,7 @@ vtk_test::vtk_test(QWidget *parent)
 	pDatalogFile = NULL;
 	pTrackerSetup = NULL;
 	m_tracker = NULL;
+    m_strayMarkers.resize(3, NO_STRAYMARKERS);
 
 	isTracking = false;
 
@@ -374,7 +375,14 @@ void vtk_test::slot_onGUITimer()
 		}
 
         // stray markers positions
-        m_numStrays = m_tracker->GetStrayMarkers(*m_strayMarkers);
+        Position3dStruct strayMarkersTemp[NO_STRAYMARKERS];
+        m_numStrayMarkers = m_tracker->GetStrayMarkers(*strayMarkersTemp);
+        for (qint32 i = 0; i < m_numStrayMarkers; ++i)
+        {
+            m_strayMarkers.col(i) << strayMarkersTemp[i].x,
+                                     strayMarkersTemp[i].y,
+                                     strayMarkersTemp[i].z;
+        }
 
         //if (m_frames%5 == 0) {
         //    printf("\n");
@@ -406,7 +414,7 @@ void vtk_test::slot_onGUITimer()
     Eigen::Matrix4d T_fiducial_final;
     for (int i = 0; i < numFiducialActors; i++) {
         T_fiducial = Eigen::Matrix4d::Identity();
-        T_fiducial.block<3, 1>(0, 3) = Eigen::Vector3d(m_strayMarkers[i].x, m_strayMarkers[i].y, m_strayMarkers[i].z);
+        T_fiducial.block<3, 1>(0, 3) = m_strayMarkers.col(i);
         T_fiducial = Polaris_sim_trans*T_fiducial * Polaris_sim_trans.inverse();
         T_fiducial_final = T_fiducial.transpose();
         pvtk_T_fiducials.at(i)->SetMatrix(T_fiducial_final.data());
@@ -441,6 +449,8 @@ void vtk_test::slot_onGUITimer()
 		flag_SetTarget = FALSE;
 	}
 
+    m_pActor_probe->SetVisibility(false); // hide probe
+
 	// update QVTKWidgets
 	m_pQVTK_top->update();
 	m_pQVTK_top_inset->update();
@@ -452,7 +462,8 @@ void vtk_test::slot_onGUITimer()
 
 	emit sgn_NewProbePosition(m_probe_transform(0,3), m_probe_transform(1, 3), m_probe_transform(2, 3));
 	emit sgn_NewCIPosition(m_CItool_transform(0,3), m_CItool_transform(1, 3), m_CItool_transform(2, 3));
-    emit sgn_NewSkullPosition(m_skull_transform(0, 3), m_skull_transform(1, 3), m_skull_transform(2, 3));
+    emit sgn_NewFiducialPositions(m_strayMarkers, m_numStrayMarkers);
+    //emit sgn_NewSkullPosition(m_skull_transform(0, 3), m_skull_transform(1, 3), m_skull_transform(2, 3));
     emit sgn_WriteData();
 	m_frames++;
 }
@@ -477,16 +488,16 @@ void vtk_test::slot_onRegistration(Eigen::MatrixXd T)
 
 void vtk_test::slot_CenterView(QString senderObjName)
 {
-	double cam_offset = 20; // distance to offset camera from focal point
+	double cam_offset = 30; // distance to offset camera from focal point
 
 	double targetx = m_CItarget_transform(0,3);
 	double targety = m_CItarget_transform(1,3);
 	double targetz = m_CItarget_transform(2,3);
 
 	// ensure view orientations are correct
-	  m_pRenderer_top->GetActiveCamera()->SetViewUp(0, 0, -1);
-	m_pRenderer_front->GetActiveCamera()->SetViewUp(0, 1, 0);
-	 m_pRenderer_side->GetActiveCamera()->SetViewUp(0, 1, 0);
+    m_pRenderer_top->GetActiveCamera()->SetViewUp(0, 0, -1);
+    m_pRenderer_front->GetActiveCamera()->SetViewUp(0, 1, 0);
+    m_pRenderer_side->GetActiveCamera()->SetViewUp(0, 1, 0);
 
 	// determine sender
 	if (senderObjName == "centerCItool")
@@ -688,8 +699,8 @@ void vtk_test::Update_err(std::vector<ToolInformationStruct> const& tools)
 
 void vtk_test::SetTransformforCI_target(patient_data ref_patient_data, Eigen::MatrixXd T_registration)
 {
-	Eigen::MatrixXd target = ref_patient_data.GetTarget();	// returns a 1x3 row
-	Eigen::MatrixXd entry = ref_patient_data.GetEntry();
+	Eigen::MatrixXd target = ref_patient_data.target();	// returns a 1x3 row
+	Eigen::MatrixXd entry = ref_patient_data.axis();
 	CI_entry = entry;
 	Eigen::MatrixXd target_reg(4,1); // create new vectors for storing the registered positions
 	Eigen::MatrixXd entry_reg(4,1); 
@@ -795,12 +806,11 @@ void vtk_test::slot_Register_Patient()
     patient_data patientData(fileName);
     if (patientData.parse())
     {
-
     }
 
 	Pat_Reg_Widget Pat_Reg_Widget(patientData);
 	connect(this, SIGNAL(sgn_NewProbePosition(double,double,double) ), &Pat_Reg_Widget, SLOT(slot_onNewProbePosition(double,double,double)));
-    connect(this, SIGNAL(sgn_NewSkullPosition(double, double, double)), &Pat_Reg_Widget, SLOT(slot_onNewSkullPosition(double, double, double)));
+    connect(this, SIGNAL(sgn_NewFiducialPositions(Eigen::Matrix3Xd &, int)), &Pat_Reg_Widget, SLOT(slot_onNewFiducialPositions(Eigen::Matrix3Xd &, int)));
     Pat_Reg_Widget.exec();
 	RigidRegistration reg = Pat_Reg_Widget.GetRegistration();
 	cout << reg.GetTransform() << endl;
