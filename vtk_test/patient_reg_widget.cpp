@@ -378,7 +378,7 @@ void Pat_Reg_Widget::RegisterCollectedData(const patient_data & ref_patient_data
 
     ui->label_registration_msg->setText(QString("Registered with FRE = ") + QString::number(m_registration.GetFRE(), 'f', 2) + QString("mm"));
 
-    if (m_registration.GetFRE() <= 0.4) {
+    if (m_registration.GetFRE() <= 1.0) {
         QPixmap greencheck(":/images/Resources/greencheck_small.png");
         ui->label_registration_check->setPixmap(greencheck);
         ui->button_finish->setText("Save and Finish");

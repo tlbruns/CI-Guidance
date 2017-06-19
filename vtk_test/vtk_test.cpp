@@ -59,7 +59,7 @@ vtk_test::vtk_test(QWidget *parent)
 	: QMainWindow(parent),
 	m_time(0),
 	m_frames(0),
-    numFiducialActors(8),
+    numFiducialActors(15),
 	flag_SetTarget(FALSE),
 	m_CItarget_transform(Matrix4d::Identity()),
 	m_CItool_transform(Matrix4d::Identity()),
@@ -337,7 +337,7 @@ void vtk_test::Initialize()
     
     pvtk_T_probe = vtkSmartPointer<vtkTransform>::New();
     pvtk_T_CItool = vtkSmartPointer<vtkTransform>::New();
-    
+    pvtk_T_CiTarget = vtkSmartPointer<vtkTransform>::New();
 
 	m_pActor_CItarget = pActor_CI_target;
 	m_pActor_CItool = pActor_CI_tool;
@@ -439,7 +439,8 @@ void vtk_test::slot_onGUITimer()
 	{
 		// update target actor
 		m_CItarget_transform = m_CItool_transform;
-		m_pActor_CItarget->SetUserTransform(pvtk_T_CItool);
+		//m_pActor_CItarget->SetUserTransform(pvtk_T_CItool);
+        m_pActor_CItarget->SetUserTransform(pvtk_T_CiTarget);
 
 		// recenter view on target
 		slot_CenterView(QString("centerCItarget"));
@@ -600,29 +601,40 @@ void vtk_test::slot_Load_Plan()
 
 void vtk_test::slot_Update_Skull(Eigen::Matrix3Xd & markers, int)
 {
+    if (m_numStrayMarkers == 0) {
+        return;
+    }
+
     Eigen::Matrix3Xd markersTrimmed = markers.block(0, 0, 3, m_numStrayMarkers); // remove extra columns
 
     // compute registration
     RigidRegistration registration;
     pointRegisterOutliers(m_patientData->fiducials(), markersTrimmed, registration);
 
-    // reset all marker colors
+    // reset all markers
     for (qint8 ii = 0; ii < numFiducialActors; ++ii) {
         m_pActor_fiducials.at(ii)->GetProperty()->SetColor(m_colorStrays.data());
+        m_pActor_fiducials.at(ii)->SetVisibility(false);
     }
 
-    if (registration.GetFRE() <= 3.0) {
+    // unhide detected markers
+    for (qint8 ii = 0; ii < m_numStrayMarkers; ++ii) {
+        m_pActor_fiducials.at(ii)->SetVisibility(true);
+    }
+
+    // if registration was successful, update target
+    if (registration.GetFRE() <= 1.5) {
         Eigen::ArrayXi indexMatch = registration.GetIndexMatch();
 
         // set color for skull fiducials
-        for (qint8 ii = 0; ii < indexMatch.cols(); ++ii) {
+        for (qint8 ii = 0; ii < indexMatch.size(); ++ii) {
             m_pActor_fiducials.at(indexMatch[ii])->GetProperty()->SetColor(m_colorFiducials.data());
         }
+
+        SetTransformforCI_target(*m_patientData, registration.GetTransform());
     }
     else {
     }
-
-    SetTransformforCI_target(*m_patientData, registration.GetTransform());
 }
 
 void vtk_test::slot_Tracker_Stop() {
@@ -769,8 +781,8 @@ void vtk_test::SetTransformforCI_target(patient_data ref_patient_data, Eigen::Ma
 	Eigen::Matrix4d T = Eigen::Matrix4d::Identity();
 	T.block<3,3>(0,0) = R;
 	T.block<4,1>(0,3) = entry_reg;
-	T = Polaris_sim_trans * T.transpose().eval() * Polaris_sim_trans;
-
+	T = Polaris_sim_trans * T.eval() * Polaris_sim_trans;
+    T.transposeInPlace();
     //PRINT_MATRIX(T);
 
 	//vtkSmartPointer<vtkTransform> vtkT_CI = vtkSmartPointer<vtkTransform>::New();
