@@ -208,4 +208,7 @@
       <Filter>Generated Files</Filter>
     </ClInclude>
   </ItemGroup>
+  <ItemGroup>
+    <None Include="C:\LIBRARIES\Eigen3\debug\msvc\eigen.natvis" />
+  </ItemGroup>
 </Project>

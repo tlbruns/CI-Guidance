@@ -15,6 +15,7 @@
 #endif
 
 using ::Eigen::MatrixXd;
+using ::Eigen::MatrixXi;
 using ::Eigen::VectorXd;
 using ::Eigen::Dynamic;
 
@@ -32,7 +33,7 @@ MatrixXd RigidRegistration::GetTransform() const
     return m_transform;
 }
 
-Eigen::ArrayXd RigidRegistration::GetIndexMatch() const
+Eigen::ArrayXi RigidRegistration::GetIndexMatch() const
 {
     return m_indexMatch;
 }
@@ -127,14 +128,14 @@ void pointRegisterOutliers(MatrixXd ptsX, MatrixXd ptsY, RigidRegistration & reg
 
     int dim = ptsX.rows();  // dimension of the space
     int Xnum = ptsX.cols(); // number of points in X
-    int Ynum = ptsX.cols(); // number of points in Y
+    int Ynum = ptsY.cols(); // number of points in Y
 
 
     /* 
     compute registrations for all permutations of points in Y that could match X 
     */
 
-    MatrixXd iPerms; // each element is the index of a point in X; each column is unique set of points
+    MatrixXi iPerms; // each element is the index of a point in X; each column is unique set of points
     createPermutations(Ynum, Xnum, iPerms); // create list (iPerms) of all choices of points
 
     MatrixXd testY(dim, Xnum); // holds the current set being tested
@@ -175,7 +176,7 @@ void pointRegisterOutliers(MatrixXd ptsX, MatrixXd ptsY, RigidRegistration & reg
         MatrixXd R = V*D*U.transpose();
         MatrixXd t = ybar - R*xbar;
 
-        MatrixXd FREcomponents = R*ptsX + t.replicate(1, Xnum) - ptsY;
+        MatrixXd FREcomponents = R*ptsX + t.replicate(1, Xnum) - testY;
         double FRE = sqrt(FREcomponents.array().pow(2).colwise().sum().mean());
 
         // check if better than current best
@@ -190,13 +191,13 @@ void pointRegisterOutliers(MatrixXd ptsX, MatrixXd ptsY, RigidRegistration & reg
     }
 }
 
-void createPermutations(int n, int k, MatrixXd & iPerms)
+void createPermutations(int n, int k, MatrixXi & iPerms)
 {
     /*
         Returns a list of all n-choose-k permutations
     */
 
-    std::vector<int> x(k); // create initial vector for permutations
+    std::vector<int> x(n); // create initial vector for permutations
     std::iota(x.begin(), x.end(), 0); // x = [0 1 2 ... n]
 
     iPerms.resize(numPermutations(n, k), k); // each row is unique permutation
@@ -214,7 +215,7 @@ void createPermutations(int n, int k, MatrixXd & iPerms)
     } while (std::next_permutation(x.begin(), x.end()));
 }
 
-int factorial(int n)
+quint64 factorial(int n)
 {
     if (n > 1)
         return n * factorial(n - 1);
@@ -222,7 +223,7 @@ int factorial(int n)
         return 1;
 }
 
-int numPermutations(int n, int k)
+quint32 numPermutations(int n, int k)
 {
     return (factorial(n) / factorial(n - k));
 }

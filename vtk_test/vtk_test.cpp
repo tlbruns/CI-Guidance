@@ -377,6 +377,7 @@ void vtk_test::slot_onGUITimer()
         // stray markers positions
         Position3dStruct strayMarkersTemp[NO_STRAYMARKERS];
         m_numStrayMarkers = m_tracker->GetStrayMarkers(*strayMarkersTemp);
+        m_strayMarkers.setZero(); // clear out old values
         for (qint32 i = 0; i < m_numStrayMarkers; ++i)
         {
             m_strayMarkers.col(i) << strayMarkersTemp[i].x,
@@ -699,15 +700,17 @@ void vtk_test::Update_err(std::vector<ToolInformationStruct> const& tools)
 
 void vtk_test::SetTransformforCI_target(patient_data ref_patient_data, Eigen::MatrixXd T_registration)
 {
-	Eigen::MatrixXd target = ref_patient_data.target();	// returns a 1x3 row
-	Eigen::MatrixXd entry = ref_patient_data.axis();
+	Eigen::Matrix3Xd target = ref_patient_data.target();	// returns a 1x3 column
+	Eigen::Matrix3Xd entry = ref_patient_data.axis();
 	CI_entry = entry;
 	Eigen::MatrixXd target_reg(4,1); // create new vectors for storing the registered positions
 	Eigen::MatrixXd entry_reg(4,1); 
 
-	target_reg.block<3,1>(0,0) = target.transpose(); // convert row to column
+	//target_reg.block<3,1>(0,0) = target.transpose(); // convert row to column
+    target_reg.block<3, 1>(0, 0) = target;
 	target_reg(3,0) = 1;
-	entry_reg.block<3,1>(0,0) = entry.transpose();
+	//entry_reg.block<3,1>(0,0) = entry.transpose();
+    entry_reg.block<3, 1>(0, 0) = entry;
 	entry_reg(3,0) = 1;
 	
 	// apply registration to bring into camera frame
@@ -715,7 +718,7 @@ void vtk_test::SetTransformforCI_target(patient_data ref_patient_data, Eigen::Ma
 	entry_reg = T_registration*entry_reg;
 
 	// move to origin and calculate axis-angle rotation w.r.t. vertical (default orientation for the CI tool)
-	Eigen::MatrixXd temp = entry.transpose()-target.transpose();
+	Eigen::MatrixXd temp = entry - target;
 	Eigen::Vector3d traj = temp.block<3,1>(0,0);
 	Eigen::Vector3d yaxis(0,1,0);
 	Eigen::Vector3d axis = traj.cross(yaxis);

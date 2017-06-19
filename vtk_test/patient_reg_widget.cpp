@@ -1,6 +1,9 @@
 #include "patient_reg_widget.h"
 #include "ui_patient_registration.h"
 #include <qdialog.h>
+#include <qtimer.h>
+#include <qdebug.h>
+#include <qelapsedtimer.h>
 #include "patient_data.h"
 #include <Eigen/dense>
 #include "rigidregistration.h"
@@ -12,8 +15,8 @@ const static int DATA_COUNT = 200;
 
 Pat_Reg_Widget::Pat_Reg_Widget(const patient_data & ref_patient_data, QWidget *parent)
 	: QDialog(parent),
-    m_maxPossibleStrays(10),
-    m_matchingTolerance(3.5),
+    m_maxPossibleStrays(15),
+    m_matchingTolerance(6.0),
 	ui(new Ui::PatientRegistration),
 	m_DataState( NOT_COLLECTING ),
 	m_ticks(0),
@@ -207,11 +210,15 @@ Pat_Reg_Widget::DataCollectingState Pat_Reg_Widget::CollectSkull(Eigen::Matrix3X
     ui->progressBar_skull->setValue(m_AverageSkull.at(0).count());
 
     if (m_AverageSkull.at(0).count() == DATA_COUNT) {
+
         // update label
         ui->label_skull_msg->setText(QString("Finished Collecting"));
 
         // perform registration
+        QElapsedTimer regTime;
+        regTime.start();
         RegisterSkull();
+        qDebug() << "Registration took " << regTime.elapsed() << "ms";
 
         return Pat_Reg_Widget::NOT_COLLECTING;
     }
@@ -268,7 +275,8 @@ void Pat_Reg_Widget::slot_onNewProbePosition(double x, double y, double z)
 
 void Pat_Reg_Widget::slot_onNewFiducialPositions(Eigen::Matrix3Xd & fiducials, int numFiducials)
 {
-    Eigen::Matrix3Xd fiducialsTrimmed = fiducials.block(0,0, 3, numFiducials);
+    Eigen::Matrix3Xd fiducialsTrimmed = fiducials.block(0,0, 3, numFiducials); // remove extra columns
+
     if (!isDataValid(fiducialsTrimmed))
         return;
     else if (m_DataState == COLLECTING_SKULL)
@@ -324,6 +332,7 @@ void Pat_Reg_Widget::slot_onButtonSkullClicked()
     if (m_DataState == NOT_COLLECTING) {
         disconnect(ui->button_finish, SIGNAL(clicked()), this, SLOT(slot_onRegister())); // registration performed automatically after collection is finished
 
+        m_AverageSkull.clear(); // reset any previously collected data
         for (qint8 i = 0; i < m_maxPossibleStrays; ++i)
         {
             m_AverageSkull.push_back(PositionAverage());
@@ -385,11 +394,18 @@ void Pat_Reg_Widget::RegisterCollectedData(const patient_data & ref_patient_data
 
 void Pat_Reg_Widget::RegisterSkull()
 {
-    // assemble matrix of the detected markers
-    qint8 numMarkers = 3;
-    //qint8 numMarkers = m_AverageSkull.size();
-    Eigen::Matrix3Xd markers(3, numMarkers);
+    // determine number of markers
+    qint8 numMarkers;
+    for (qint8 ii = 0; ii < m_AverageSkull.size(); ++ii)
+    {
+        if (m_AverageSkull.at(ii).count() == 0) {
+            numMarkers = ii;
+            break;
+        }
+    }
 
+    // assemble matrix of the detected markers
+    Eigen::Matrix3Xd markers(3, numMarkers);
     for (qint8 ii = 0; ii < numMarkers; ++ii)
     {
         markers.col(ii) = m_AverageSkull.at(ii).GetAverageVector3d();
