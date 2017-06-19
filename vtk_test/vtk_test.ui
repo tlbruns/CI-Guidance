@@ -48,6 +48,7 @@
     <property name="title">
      <string>File</string>
     </property>
+    <addaction name="actionRegister_Patient"/>
     <addaction name="actionDemo"/>
     <addaction name="actionClose"/>
    </widget>
@@ -70,7 +71,7 @@
    <attribute name="toolBarBreak">
     <bool>false</bool>
    </attribute>
-   <addaction name="actionRegister_Patient"/>
+   <addaction name="actionLoad_Plan"/>
    <addaction name="actionCenter_Target"/>
   </widget>
   <widget class="QStatusBar" name="statusBar"/>
@@ -117,6 +118,11 @@
   <action name="actionTracker_Setup_2">
    <property name="text">
     <string>Setup</string>
+   </property>
+  </action>
+  <action name="actionLoad_Plan">
+   <property name="text">
+    <string>Load Plan</string>
    </property>
   </action>
  </widget>

@@ -36,6 +36,7 @@ public:
     QAction *actionTracker_Init;
     QAction *actionTracker_Stop;
     QAction *actionTracker_Setup_2;
+    QAction *actionLoad_Plan;
     QWidget *centralWidget;
     QGridLayout *gridLayout_3;
     QGridLayout *gridlayout;
@@ -68,6 +69,8 @@ public:
         actionTracker_Stop->setObjectName(QStringLiteral("actionTracker_Stop"));
         actionTracker_Setup_2 = new QAction(vtk_testClass);
         actionTracker_Setup_2->setObjectName(QStringLiteral("actionTracker_Setup_2"));
+        actionLoad_Plan = new QAction(vtk_testClass);
+        actionLoad_Plan->setObjectName(QStringLiteral("actionLoad_Plan"));
         centralWidget = new QWidget(vtk_testClass);
         centralWidget->setObjectName(QStringLiteral("centralWidget"));
         gridLayout_3 = new QGridLayout(centralWidget);
@@ -99,13 +102,14 @@ public:
 
         menuBar->addAction(menuFile->menuAction());
         menuBar->addAction(menuTracker->menuAction());
+        menuFile->addAction(actionRegister_Patient);
         menuFile->addAction(actionDemo);
         menuFile->addAction(actionClose);
         menuTracker->addAction(actionTracker_Init);
         menuTracker->addAction(actionTracker_Stop);
         menuTracker->addSeparator();
         menuTracker->addAction(actionTracker_Setup_2);
-        mainToolBar->addAction(actionRegister_Patient);
+        mainToolBar->addAction(actionLoad_Plan);
         mainToolBar->addAction(actionCenter_Target);
 
         retranslateUi(vtk_testClass);
@@ -126,6 +130,7 @@ public:
         actionTracker_Init->setText(QApplication::translate("vtk_testClass", "Init", 0));
         actionTracker_Stop->setText(QApplication::translate("vtk_testClass", "Stop", 0));
         actionTracker_Setup_2->setText(QApplication::translate("vtk_testClass", "Setup", 0));
+        actionLoad_Plan->setText(QApplication::translate("vtk_testClass", "Load Plan", 0));
         menuFile->setTitle(QApplication::translate("vtk_testClass", "File", 0));
         menuTracker->setTitle(QApplication::translate("vtk_testClass", "Tracker", 0));
     } // retranslateUi

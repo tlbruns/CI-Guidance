@@ -15,6 +15,8 @@ patient_data::~patient_data(void)
 
 bool patient_data::parse(void)
 {
+    bool success = false;
+
     QSettings iniFile(iniFileName, QSettings::IniFormat);
 
     // check that file is correct format
@@ -53,8 +55,9 @@ bool patient_data::parse(void)
                                iniFile.value("y").toFloat(),
                                iniFile.value("z").toFloat();
     }
+    success = true;
 
-    return true;
+    return success;
 }
 
 quint32 patient_data::id()

@@ -7,6 +7,7 @@
  VTK_MODULE_INIT(vtkInteractionStyle);
 
 #include "Tracker.h"
+#include <QtGlobal>
 #include <qscreen.h>
 #include <QVTKWidget.h>
 #include <qfiledialog.h>
@@ -58,7 +59,7 @@ vtk_test::vtk_test(QWidget *parent)
 	: QMainWindow(parent),
 	m_time(0),
 	m_frames(0),
-    numFiducialActors(4),
+    numFiducialActors(8),
 	flag_SetTarget(FALSE),
 	m_CItarget_transform(Matrix4d::Identity()),
 	m_CItool_transform(Matrix4d::Identity()),
@@ -75,6 +76,17 @@ vtk_test::vtk_test(QWidget *parent)
 	ui.setupUi(this);
 	
 	dpi = QApplication::screens().at(0)->physicalDotsPerInch();
+
+    m_colorCiTool    << 0.3, 1.0, 0.3;
+    m_colorCiTarget  << 0.8, 0.3, 0.3;
+    m_colorProbe     << 0.3, 0.3, 1.0;
+    m_colorFiducials << 0.81, 0.37, 0.08;
+    m_colorStrays    << 0.31, 0.65, 0.79;
+
+    Polaris_sim_trans << 0,-1, 0, 0, // note: inverse is equal to itself for this matrix
+                        -1, 0, 0, 0,
+                         0, 0,-1, 0,
+                         0, 0, 0, 1;
 
 	// setup info panel on left side
 	InfoWidget *iw = new InfoWidget(this);
@@ -122,13 +134,9 @@ vtk_test::vtk_test(QWidget *parent)
 	m_frameRateTimer.start();
 	ui.statusBar->addWidget(&m_frameRateLabel);
 
-	//// setup tracker
-	//m_tracker.InitializeSystem();
-	//m_tracker.StartTracking();
-	
-
 	// connect signals/slots
 	connect(ui.actionRegister_Patient, SIGNAL(triggered()),this, SLOT(slot_Register_Patient()));
+    connect(ui.actionLoad_Plan, SIGNAL(triggered()), this, SLOT(slot_Load_Plan()));
 	connect(ui.actionTracker_Setup_2, SIGNAL(triggered()), this, SLOT(slot_Tracker_Setup()));
 	connect(ui.actionDemo, SIGNAL(triggered()), this, SLOT(slot_Demo()));
 	connect(this, SIGNAL(sgn_NewProbePosition(double,double,double)), iw, SLOT(slot_NewProbePosition(double,double,double)));
@@ -272,8 +280,8 @@ void vtk_test::Initialize()
     //QString ciToolFilename = QString::fromLocal8Bit("D:\\Trevor\\My Documents\\Code\\VTKtest\\vtk_test\\x64\\Release\\insertion_tool_wtarget.obj");
     QString ciToolFilename = QString::fromLocal8Bit("D:\\Trevor\\My Documents\\Code\\VTKtest\\vtk_test\\x64\\Release\\insertion_tool_shell.obj");
     //QString ciToolFilename = QString::fromLocal8Bit("D:\\Trevor\\My Documents\\MED lab\\Cochlear R01\\CAD\\Insertion Tool\\mkii\\insertion_tool_shell.obj");
-    double color1[] = { 0.8,0.3,0.3 };
-    vtkSmartPointer<vtkActor> pActor_CI_target = LoadOBJFile(ciToolFilename, 0.3, color1);
+    //double color1[] = { 0.8,0.3,0.3 };
+    vtkSmartPointer<vtkActor> pActor_CI_target = LoadOBJFile(ciToolFilename, 0.3, m_colorCiTarget.data());
     //vtkSmartPointer<vtkActor> pActor_CI_target = LoadSTLFile(ciToolFilename, 0.3, color1);
     m_pRenderer_top->AddActor(pActor_CI_target);
 	m_pRenderer_top_inset->AddActor(pActor_CI_target);
@@ -283,8 +291,8 @@ void vtk_test::Initialize()
 	m_pRenderer_side->AddActor(pActor_CI_target);
 	m_pRenderer_side_inset->AddActor(pActor_CI_target);
 
-	double color2[] = { 0.3,1.0,0.3 };
-    vtkSmartPointer<vtkActor> pActor_CI_tool = LoadOBJFile(ciToolFilename, 1.0, color2);
+	//double color2[] = { 0.3,1.0,0.3 };
+    vtkSmartPointer<vtkActor> pActor_CI_tool = LoadOBJFile(ciToolFilename, 1.0, m_colorCiTool.data());
     //vtkSmartPointer<vtkActor> pActor_CI_tool = LoadSTLFile(ciToolFilename, 1.0, color2);
     m_pRenderer_top->AddActor(pActor_CI_tool);
 	m_pRenderer_top_inset->AddActor(pActor_CI_tool);
@@ -294,25 +302,27 @@ void vtk_test::Initialize()
 	m_pRenderer_side->AddActor(pActor_CI_tool);
 	m_pRenderer_side_inset->AddActor(pActor_CI_tool);
 
-	double color3[] = { 0.3,0.3,1 };
-	vtkSmartPointer<vtkActor> pActor_probe = LoadOBJFile(QString::fromLocal8Bit("D:\\Trevor\\My Documents\\Code\\VTKtest\\vtk_test\\x64\\Release\\polaris_probe.obj"), 1.0, color3);
+	//double color3[] = { 0.3,0.3,1 };
+	vtkSmartPointer<vtkActor> pActor_probe = LoadOBJFile(QString::fromLocal8Bit("D:\\Trevor\\My Documents\\Code\\VTKtest\\vtk_test\\x64\\Release\\polaris_probe.obj"), 1.0, m_colorProbe.data());
 	//vtkSmartPointer<vtkActor> pActor_probe = LoadSTLFile(QString::fromLocal8Bit("C:\\Users\\wirzgor\\Source\\Repos\\CI-Guidance\\x64\\Debug\\patient.stl"), 1.0, color3);
 	m_pRenderer_top->AddActor(pActor_probe);
 	m_pRenderer_oblique->AddActor(pActor_probe);
 	m_pRenderer_front->AddActor(pActor_probe);
 	m_pRenderer_side->AddActor(pActor_probe);
 
-    double colorFiducials[] = { 0.81, 0.37, 0.08 }; // orange
+    //double colorFiducials[] = { 0.81, 0.37, 0.08 }; // orange
     for (int i = 0; i < numFiducialActors; i++) {
         vtkSmartPointer<vtkSphereSource> sphereSource = vtkSmartPointer<vtkSphereSource>::New();
         sphereSource->SetCenter(0.0, 0.0, 5.0*i);
-        sphereSource->SetRadius(10.0);
+        sphereSource->SetRadius(3.0);
+        sphereSource->SetThetaResolution(16);
+        sphereSource->SetPhiResolution(12);
 
         vtkSmartPointer<vtkPolyDataMapper> mapper = vtkSmartPointer<vtkPolyDataMapper>::New();
         mapper->SetInputConnection(sphereSource->GetOutputPort());
 
         vtkSmartPointer<vtkActor> actor = vtkSmartPointer<vtkActor>::New();
-        actor->GetProperty()->SetColor(colorFiducials);
+        actor->GetProperty()->SetColor(m_colorStrays.data());
         actor->SetMapper(mapper);
         
         m_pActor_fiducials.push_back(actor);
@@ -350,10 +360,8 @@ void vtk_test::slot_onGUITimer()
 	R.resize(NUM_TRACKED_TOOLS + 1);
 	T.resize(NUM_TRACKED_TOOLS + 1);
 	Trans_final.resize(NUM_TRACKED_TOOLS + 1);
-
-  //std::vector<ToolInformationStruct> tools = m_tracker.GetTransformationsAndStrays();
-  std::vector<ToolInformationStruct> tools = m_tracker->GetTransformationsAndStrays();
-  //std::vector<ToolInformationStruct> tools = m_tracker.GetTransformations();
+    
+    std::vector<ToolInformationStruct> tools = m_tracker->GetTransformationsAndStrays();
 
 	if (TRACKER_SIMULATE) {
 		quat_Polaris[1] = Eigen::Quaterniond(1, 0, 0, 0);
@@ -384,20 +392,9 @@ void vtk_test::slot_onGUITimer()
                                      strayMarkersTemp[i].y,
                                      strayMarkersTemp[i].z;
         }
-
-        //if (m_frames%5 == 0) {
-        //    printf("\n");
-        //    for (int i = 0; i < m_numStrays; i++) {
-        //        printf("mk%i = [%.2f, %.2f, %.2f]\n", i, m_strayMarkers[i].x, m_strayMarkers[i].y, m_strayMarkers[i].z);
-        //    }
-        //}
 	}
 
-    Eigen::Matrix4d Polaris_sim_trans(4, 4);
-    Polaris_sim_trans << 0,-1, 0, 0, // note: inverse is equal to itself for this matrix
-                        -1, 0, 0, 0,
-                         0, 0,-1, 0,
-                         0, 0, 0, 1;
+    
 
 	// convert quaternion to rotation matrix and combine with translation into a transformation matrix
 	for (int toolnum = 1; toolnum <= NUM_TRACKED_TOOLS; toolnum++) {
@@ -407,13 +404,14 @@ void vtk_test::slot_onGUITimer()
 		T[toolnum].block<3, 1>(0, 3) = p[toolnum];
 
 		// apply similarity transform
-		Trans_final[toolnum] = Polaris_sim_trans*T[toolnum] * Polaris_sim_trans.inverse();
+		Trans_final[toolnum] = Polaris_sim_trans * T[toolnum] * Polaris_sim_trans; // Polaris_sim_trans inverse is equal to itself
+        //Trans_final[toolnum] = Polaris_sim_trans*T[toolnum] * Polaris_sim_trans.inverse();
 	}
 
     // update fiducial actor positions
     Eigen::Matrix4d T_fiducial; 
     Eigen::Matrix4d T_fiducial_final;
-    for (int i = 0; i < numFiducialActors; i++) {
+    for (int i = 0; i < qMin(numFiducialActors,m_numStrayMarkers); i++) {
         T_fiducial = Eigen::Matrix4d::Identity();
         T_fiducial.block<3, 1>(0, 3) = m_strayMarkers.col(i);
         T_fiducial = Polaris_sim_trans*T_fiducial * Polaris_sim_trans.inverse();
@@ -587,6 +585,46 @@ void vtk_test::slot_CenterTarget()
 	slot_CenterView("centerCItarget");
 }
 
+void vtk_test::slot_Load_Plan()
+{
+    // open file dialog and select trajectory plan
+    QString fileName = QFileDialog::getOpenFileName(NULL, "Open Patient Data File", NULL, "CI Plan (*.ini);;All Files (*.*)");
+
+    // parse patient data
+    m_patientData = new patient_data(fileName);
+    if (m_patientData->parse())
+    {
+        connect(this, SIGNAL(sgn_NewFiducialPositions(Eigen::Matrix3Xd &, int)), this, SLOT(slot_Update_Skull(Eigen::Matrix3Xd &, int)));
+    }
+}
+
+void vtk_test::slot_Update_Skull(Eigen::Matrix3Xd & markers, int)
+{
+    Eigen::Matrix3Xd markersTrimmed = markers.block(0, 0, 3, m_numStrayMarkers); // remove extra columns
+
+    // compute registration
+    RigidRegistration registration;
+    pointRegisterOutliers(m_patientData->fiducials(), markersTrimmed, registration);
+
+    // reset all marker colors
+    for (qint8 ii = 0; ii < numFiducialActors; ++ii) {
+        m_pActor_fiducials.at(ii)->GetProperty()->SetColor(m_colorStrays.data());
+    }
+
+    if (registration.GetFRE() <= 3.0) {
+        Eigen::ArrayXi indexMatch = registration.GetIndexMatch();
+
+        // set color for skull fiducials
+        for (qint8 ii = 0; ii < indexMatch.cols(); ++ii) {
+            m_pActor_fiducials.at(indexMatch[ii])->GetProperty()->SetColor(m_colorFiducials.data());
+        }
+    }
+    else {
+    }
+
+    SetTransformforCI_target(*m_patientData, registration.GetTransform());
+}
+
 void vtk_test::slot_Tracker_Stop() {
 	ui.actionTracker_Init->setDisabled(false);
 	ui.actionTracker_Stop->setDisabled(true);
@@ -731,13 +769,16 @@ void vtk_test::SetTransformforCI_target(patient_data ref_patient_data, Eigen::Ma
 	Eigen::Matrix4d T = Eigen::Matrix4d::Identity();
 	T.block<3,3>(0,0) = R;
 	T.block<4,1>(0,3) = entry_reg;
-	T = T.transpose().eval();
+	T = Polaris_sim_trans * T.transpose().eval() * Polaris_sim_trans;
 
-	PRINT_MATRIX(T);
+    //PRINT_MATRIX(T);
 
-	vtkSmartPointer<vtkTransform> vtkT_CI = vtkSmartPointer<vtkTransform>::New();
-	vtkT_CI->SetMatrix(T.data());
-	m_pActor_CItarget->SetUserTransform( vtkT_CI );
+	//vtkSmartPointer<vtkTransform> vtkT_CI = vtkSmartPointer<vtkTransform>::New();
+	//vtkT_CI->SetMatrix(T.data());
+	//m_pActor_CItarget->SetUserTransform( vtkT_CI );
+
+    pvtk_T_CiTarget->SetMatrix(T.data());
+    m_pActor_CItarget->SetUserTransform(pvtk_T_CiTarget);
 }
 
 void vtk_test::SetTransformforCI_target(Eigen::MatrixXd T_target)

@@ -25,11 +25,11 @@ private:
     Eigen::ArrayXi m_indexMatch;
     
     friend void pointRegister(Eigen::MatrixXd ptsX, Eigen::MatrixXd ptsY, RigidRegistration &reg);
-    friend void pointRegisterOutliers(Eigen::MatrixXd ptsX, Eigen::MatrixXd ptsY, RigidRegistration& reg);
+    friend int pointRegisterOutliers(Eigen::MatrixXd ptsX, Eigen::MatrixXd ptsY, RigidRegistration& reg);
 };
 
 void pointRegister(Eigen::MatrixXd ptsX, Eigen::MatrixXd ptsY, RigidRegistration& reg); // ordered point sets of the same size
-void pointRegisterOutliers(Eigen::MatrixXd ptsX, Eigen::MatrixXd ptsY, RigidRegistration& reg); // determines which points in ptsX correspond to those in ptsY
+int pointRegisterOutliers(Eigen::MatrixXd ptsX, Eigen::MatrixXd ptsY, RigidRegistration& reg); // determines which points in ptsX correspond to those in ptsY
 quint64 factorial(int n);
 quint32 numPermutations(int n, int k);
 void createPermutations(int n, int k, Eigen::MatrixXi & iPerms);

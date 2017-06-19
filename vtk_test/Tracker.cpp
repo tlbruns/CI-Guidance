@@ -156,9 +156,13 @@ NDIAuroraTracker::StopTracking()
 
 int NDIAuroraTracker::GetStrayMarkers(Position3dStruct &strayMarkers)
 {
-    memcpy(&strayMarkers, pCommandHandling->m_StrayMarkers, sizeof(pCommandHandling->m_StrayMarkers));
-    //std::copy(m_StrayMarkers, m_StrayMarkers + sizeof(m_StrayMarkers), strayMarkers);
-    return pCommandHandling->m_nNoStrayMarkers;
+    int numStrayMarkers = pCommandHandling->m_nNoStrayMarkers;
+
+    if (numStrayMarkers > 0) {
+        memcpy(&strayMarkers, pCommandHandling->m_StrayMarkers, sizeof(pCommandHandling->m_StrayMarkers));
+    }
+    
+    return numStrayMarkers;
 }
 
 int NDIAuroraTracker::getNumberOfTools()

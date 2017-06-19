@@ -107,7 +107,7 @@ void pointRegister(MatrixXd ptsX, MatrixXd ptsY, RigidRegistration& reg)
     reg.m_transform.block(0,3,3,1) = t;
 }
 
-void pointRegisterOutliers(MatrixXd ptsX, MatrixXd ptsY, RigidRegistration & reg)
+int pointRegisterOutliers(MatrixXd ptsX, MatrixXd ptsY, RigidRegistration & reg)
 {
     // Finds the set of points in ptsY that corresponds to those in ptsX (rejecting outlier points) 
     // and computes registration: T*ptsX = ptsY
@@ -120,10 +120,12 @@ void pointRegisterOutliers(MatrixXd ptsX, MatrixXd ptsY, RigidRegistration & reg
 
     if (ptsX.rows() != ptsY.rows()) {
         qDebug() << "Both vectors of points must have the same number of rows (same dimension)";
+        return -1;
     }
 
     if (ptsX.cols() > ptsY.cols()) {
         qDebug() << "Y must have at least as many points as X";
+        return -1;
     }
 
     int dim = ptsX.rows();  // dimension of the space
@@ -189,6 +191,7 @@ void pointRegisterOutliers(MatrixXd ptsX, MatrixXd ptsY, RigidRegistration & reg
             reg.m_indexMatch = iPerms.row(ii);
         }   
     }
+    return 1;
 }
 
 void createPermutations(int n, int k, MatrixXi & iPerms)

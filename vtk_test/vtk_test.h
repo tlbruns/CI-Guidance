@@ -55,6 +55,8 @@ protected slots:
 	void slot_onGUITimer();
 	void slot_CenterView(QString);
 	void slot_CenterTarget();
+    void slot_Load_Plan();
+    void slot_Update_Skull(Eigen::Matrix3Xd &, int);
 	void slot_Register_Patient();
 	void slot_Tracker_Setup();
 	void slot_SetTarget();
@@ -83,6 +85,7 @@ private:
 	double dpi;
 	TrackerSetup *pTrackerSetup;
 	Ui::vtk_testClass	ui;
+    patient_data    *m_patientData;
 	QTimer			m_timer;
 	QTimer			m_frameRateTimer;
 	QElapsedTimer	m_datalogTimer;
@@ -98,12 +101,11 @@ private:
 	QVTKWidget		*m_pQVTK_side_inset;
 	QFile			*pDatalogFile;
 	int				m_time;
-    int             numFiducialActors;
   
     NDIAuroraTracker	*m_tracker;
     //NDIAuroraTracker	m_tracker;
 
-    vtkSmartPointer<vtkRenderer>  m_pRenderer_oblique;
+    vtkSmartPointer<vtkRenderer>    m_pRenderer_oblique;
     vtkSmartPointer<vtkRenderer>	m_pRenderer_top;
     vtkSmartPointer<vtkRenderer>	m_pRenderer_top_inset;
     vtkSmartPointer<vtkRenderer>	m_pRenderer_front;
@@ -115,13 +117,22 @@ private:
 	vtkSmartPointer<vtkActor>		m_pActor_CItool;
 	vtkSmartPointer<vtkActor>		m_pActor_CItarget;
     std::vector<vtkSmartPointer<vtkActor>> m_pActor_fiducials;
+    quint8                          numFiducialActors;
 
+    Eigen::Vector3d  m_colorCiTool;
+    Eigen::Vector3d  m_colorCiTarget;
+    Eigen::Vector3d  m_colorProbe;
+    Eigen::Vector3d  m_colorFiducials;
+    Eigen::Vector3d  m_colorStrays;
+
+    Eigen::Matrix4d Polaris_sim_trans; // similarity transform for Polaris Spectra
     vtkSmartPointer<vtkTransform>   pvtk_T_probe;
     vtkSmartPointer<vtkTransform>   pvtk_T_CItool;
+    vtkSmartPointer<vtkTransform>   pvtk_T_CiTarget;
     std::vector<vtkSmartPointer<vtkTransform>> pvtk_T_fiducials;
 
-    Eigen::Matrix3Xd  m_strayMarkers;
-    qint8             m_numStrayMarkers;
+    Eigen::Matrix3Xd   m_strayMarkers;
+    quint8             m_numStrayMarkers;
 
 	RotationMatrix		dtRotMatrix;
 	Eigen::Matrix4d		m_CItarget_transform;
