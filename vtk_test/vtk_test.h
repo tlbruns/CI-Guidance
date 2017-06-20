@@ -42,7 +42,7 @@ public:
 	vtkSmartPointer<vtkActor> LoadOBJFile(QString const& str, double opacity, double color[3]) const;
 	void Initialize();
 	vtkSmartPointer<vtkActor> LoadSTLFile(QString const & str, double opacity, double color[3]) const;
-	void SetTransformforCI_target(patient_data, Eigen::MatrixXd);
+	void SetTransformforCI_target(patient_data *, Eigen::MatrixXd);
 	void SetTransformforCI_target(Eigen::MatrixXd);
 
 protected:
@@ -57,6 +57,7 @@ protected slots:
 	void slot_CenterTarget();
     void slot_Load_Plan();
     void slot_Update_Skull(Eigen::Matrix3Xd &, int);
+    void slot_LiveTracking(int);
 	void slot_Register_Patient();
 	void slot_Tracker_Setup();
 	void slot_SetTarget();
@@ -75,12 +76,14 @@ signals:
 	void sgn_NewMagPosition(double,double,double);
     void sgn_NewFiducialPositions(Eigen::Matrix3Xd &, int);
     void sgn_NewSkullPosition(double, double, double);
+    void sgn_NewFre(double);
 	void sgn_err(double,double);
 	void sgn_err_ang(double);
 	void sgn_WriteData();
 
 private:
 	bool isTracking;
+    bool planLoaded;
 	int tracker_Port;
 	double dpi;
 	TrackerSetup *pTrackerSetup;
@@ -116,6 +119,9 @@ private:
 	vtkSmartPointer<vtkActor>		m_pActor_probe;
 	vtkSmartPointer<vtkActor>		m_pActor_CItool;
 	vtkSmartPointer<vtkActor>		m_pActor_CItarget;
+    vtkSmartPointer<vtkActor>       m_pActor_cochlea;
+    vtkSmartPointer<vtkActor>       m_pActor_target_desired;
+    vtkSmartPointer<vtkActor>       m_pActor_target_current;
     std::vector<vtkSmartPointer<vtkActor>> m_pActor_fiducials;
     quint8                          numFiducialActors;
 
@@ -129,6 +135,7 @@ private:
     vtkSmartPointer<vtkTransform>   pvtk_T_probe;
     vtkSmartPointer<vtkTransform>   pvtk_T_CItool;
     vtkSmartPointer<vtkTransform>   pvtk_T_CiTarget;
+    vtkSmartPointer<vtkTransform>   pvtk_T_cochlea;
     std::vector<vtkSmartPointer<vtkTransform>> pvtk_T_fiducials;
 
     Eigen::Matrix3Xd   m_strayMarkers;

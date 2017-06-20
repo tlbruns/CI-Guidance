@@ -1,4 +1,6 @@
 #include "infowidget.h"
+#include <qcolor.h>
+
 const static double err_thresh_pos = 0.5;
 const static double err_thresh_ang = 2;
 
@@ -6,6 +8,8 @@ InfoWidget::InfoWidget(QWidget *parent)
 	: QWidget(parent)
 {
 	ui.setupUi(this);
+
+    liveTracking = false;
 
 	// create name used to identify object that triggered slot
 	ui.button_centerCItool->setObjectName("centerCItool"); 
@@ -18,10 +22,12 @@ InfoWidget::InfoWidget(QWidget *parent)
 	ui.label_mag_err->setHidden(true);
 	ui.progressBar_mag_err->setHidden(true);
 
+    ui.label_FRE->setHidden(true);
+
 	// connect signals/slots
 	connect(ui.button_centerCItool, SIGNAL(clicked()), this, SLOT(slot_CenterView()));
 	connect(ui.button_centerProbe,  SIGNAL(clicked()), this, SLOT(slot_CenterView()));
-
+    connect(ui.checkBox_LiveTarget, SIGNAL(stateChanged(int)), this, SLOT(slot_Checkbox_LiveTracking(int)));
 }
 
 InfoWidget::~InfoWidget()
@@ -130,4 +136,37 @@ void InfoWidget::slot_CenterView()
 	QString senderObjName = senderObj->objectName(); // sender name
 
 	emit sgn_CenterView(senderObjName);
+}
+
+void InfoWidget::slot_Checkbox_LiveTracking(int state)
+{
+    if (state) {
+        ui.label_FRE->setHidden(false);
+    }
+    else {
+        ui.label_FRE->setHidden(true);
+    }
+
+    emit sgn_LiveTracking(state);
+}
+
+void InfoWidget::slot_NewFre(double fre)
+{
+    // wait until registration has been performed before allowing user to enable live tracking
+    if (fre == 0) {
+        liveTracking = true;
+        ui.checkBox_LiveTarget->setCheckable(true);
+    }
+   
+    // set color based on fre
+    QString freTxt;
+    if (fre < 1.0) {
+        freTxt.sprintf("FRE = %.2f", fre);
+        ui.label_FRE->setText(freTxt);
+    }
+    else {
+        freTxt.sprintf("Warning! FRE = %.2f", fre);
+        ui.label_FRE->setText(freTxt);
+    }
+    
 }

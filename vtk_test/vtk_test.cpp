@@ -72,7 +72,7 @@ vtk_test::vtk_test(QWidget *parent)
     m_strayMarkers.resize(3, NO_STRAYMARKERS);
 
 	isTracking = false;
-
+    planLoaded = false;
 	ui.setupUi(this);
 	
 	dpi = QApplication::screens().at(0)->physicalDotsPerInch();
@@ -135,19 +135,21 @@ vtk_test::vtk_test(QWidget *parent)
 	ui.statusBar->addWidget(&m_frameRateLabel);
 
 	// connect signals/slots
+    connect(ui.actionTracker_Init, SIGNAL(triggered()), this, SLOT(slot_Tracker_Init()));
+    connect(ui.actionTracker_Stop, SIGNAL(triggered()), this, SLOT(slot_Tracker_Stop()));
 	connect(ui.actionRegister_Patient, SIGNAL(triggered()),this, SLOT(slot_Register_Patient()));
     connect(ui.actionLoad_Plan, SIGNAL(triggered()), this, SLOT(slot_Load_Plan()));
 	connect(ui.actionTracker_Setup_2, SIGNAL(triggered()), this, SLOT(slot_Tracker_Setup()));
 	connect(ui.actionDemo, SIGNAL(triggered()), this, SLOT(slot_Demo()));
+    connect(ui.actionCenter_Target, SIGNAL(triggered()), this, SLOT(slot_CenterTarget()));
 	connect(this, SIGNAL(sgn_NewProbePosition(double,double,double)), iw, SLOT(slot_NewProbePosition(double,double,double)));
 	connect(this, SIGNAL(sgn_NewCIPosition(double,double,double)), iw, SLOT(slot_NewCIPosition(double,double,double)));
 	connect(this, SIGNAL(sgn_NewMagPosition(double,double,double)), iw, SLOT(slot_NewMagPosition(double,double,double)));
-	connect(iw, SIGNAL(sgn_CenterView(QString)), this, SLOT(slot_CenterView(QString)));
-	connect(ui.actionCenter_Target, SIGNAL(triggered()), this, SLOT(slot_CenterTarget()));
 	connect(this, SIGNAL(sgn_err(double,double)), iw, SLOT(slot_update_err(double,double)));
 	connect(this, SIGNAL(sgn_err_ang(double)), iw, SLOT(slot_update_err_theta(double)));
-	connect(ui.actionTracker_Init, SIGNAL(triggered()), this, SLOT(slot_Tracker_Init()));
-	connect(ui.actionTracker_Stop, SIGNAL(triggered()), this, SLOT(slot_Tracker_Stop()));
+    connect(this, SIGNAL(sgn_NewFre(double)), iw, SLOT(slot_NewFre(double)));
+    connect(iw, SIGNAL(sgn_CenterView(QString)), this, SLOT(slot_CenterView(QString)));
+    connect(iw, SIGNAL(sgn_LiveTracking(int)), this, SLOT(slot_LiveTracking(int)));
 
 	//Tracker GUI
 	ui.actionTracker_Stop->setEnabled(false);
@@ -280,9 +282,7 @@ void vtk_test::Initialize()
     //QString ciToolFilename = QString::fromLocal8Bit("D:\\Trevor\\My Documents\\Code\\VTKtest\\vtk_test\\x64\\Release\\insertion_tool_wtarget.obj");
     QString ciToolFilename = QString::fromLocal8Bit("D:\\Trevor\\My Documents\\Code\\VTKtest\\vtk_test\\x64\\Release\\insertion_tool_shell.obj");
     //QString ciToolFilename = QString::fromLocal8Bit("D:\\Trevor\\My Documents\\MED lab\\Cochlear R01\\CAD\\Insertion Tool\\mkii\\insertion_tool_shell.obj");
-    //double color1[] = { 0.8,0.3,0.3 };
     vtkSmartPointer<vtkActor> pActor_CI_target = LoadOBJFile(ciToolFilename, 0.3, m_colorCiTarget.data());
-    //vtkSmartPointer<vtkActor> pActor_CI_target = LoadSTLFile(ciToolFilename, 0.3, color1);
     m_pRenderer_top->AddActor(pActor_CI_target);
 	m_pRenderer_top_inset->AddActor(pActor_CI_target);
 	m_pRenderer_oblique->AddActor(pActor_CI_target);
@@ -291,9 +291,7 @@ void vtk_test::Initialize()
 	m_pRenderer_side->AddActor(pActor_CI_target);
 	m_pRenderer_side_inset->AddActor(pActor_CI_target);
 
-	//double color2[] = { 0.3,1.0,0.3 };
     vtkSmartPointer<vtkActor> pActor_CI_tool = LoadOBJFile(ciToolFilename, 1.0, m_colorCiTool.data());
-    //vtkSmartPointer<vtkActor> pActor_CI_tool = LoadSTLFile(ciToolFilename, 1.0, color2);
     m_pRenderer_top->AddActor(pActor_CI_tool);
 	m_pRenderer_top_inset->AddActor(pActor_CI_tool);
 	m_pRenderer_oblique->AddActor(pActor_CI_tool);
@@ -302,18 +300,51 @@ void vtk_test::Initialize()
 	m_pRenderer_side->AddActor(pActor_CI_tool);
 	m_pRenderer_side_inset->AddActor(pActor_CI_tool);
 
-	//double color3[] = { 0.3,0.3,1 };
 	vtkSmartPointer<vtkActor> pActor_probe = LoadOBJFile(QString::fromLocal8Bit("D:\\Trevor\\My Documents\\Code\\VTKtest\\vtk_test\\x64\\Release\\polaris_probe.obj"), 1.0, m_colorProbe.data());
-	//vtkSmartPointer<vtkActor> pActor_probe = LoadSTLFile(QString::fromLocal8Bit("C:\\Users\\wirzgor\\Source\\Repos\\CI-Guidance\\x64\\Debug\\patient.stl"), 1.0, color3);
 	m_pRenderer_top->AddActor(pActor_probe);
 	m_pRenderer_oblique->AddActor(pActor_probe);
 	m_pRenderer_front->AddActor(pActor_probe);
 	m_pRenderer_side->AddActor(pActor_probe);
 
-    //double colorFiducials[] = { 0.81, 0.37, 0.08 }; // orange
+    //vtkSmartPointer<vtkActor> pActor_cochlea = LoadOBJFile(QString::fromLocal8Bit("D:\\Trevor\\My Documents\\Code\\VTKtest\\vtk_test\\x64\\Release\\scala_tympani.obj"), 1.0, m_colorProbe.data());
+    //m_pRenderer_top->AddActor(pActor_cochlea);
+    //m_pRenderer_oblique->AddActor(pActor_cochlea);
+    //m_pRenderer_front->AddActor(pActor_cochlea);
+    //m_pRenderer_side->AddActor(pActor_cochlea);
+
+    vtkSmartPointer<vtkSphereSource> sphereTemp = vtkSmartPointer<vtkSphereSource>::New();
+    sphereTemp->SetCenter(0.0, 0.0, 0.0);
+    sphereTemp->SetRadius(0.5);
+    sphereTemp->SetThetaResolution(12);
+    sphereTemp->SetPhiResolution(12);
+    vtkSmartPointer<vtkPolyDataMapper> mapperTemp = vtkSmartPointer<vtkPolyDataMapper>::New();
+    mapperTemp->SetInputConnection(sphereTemp->GetOutputPort());
+
+    m_pActor_target_current = vtkSmartPointer<vtkActor>::New();
+    m_pActor_target_current->GetProperty()->SetColor(m_colorCiTool.data());
+    m_pActor_target_current->SetMapper(mapperTemp);
+    m_pRenderer_top->AddActor(m_pActor_target_current);
+    m_pRenderer_top_inset->AddActor(m_pActor_target_current);
+    m_pRenderer_oblique->AddActor(m_pActor_target_current);
+    m_pRenderer_front->AddActor(m_pActor_target_current);
+    m_pRenderer_front_inset->AddActor(m_pActor_target_current);
+    m_pRenderer_side->AddActor(m_pActor_target_current);
+    m_pRenderer_side_inset->AddActor(m_pActor_target_current);
+
+    m_pActor_target_desired = vtkSmartPointer<vtkActor>::New();
+    m_pActor_target_desired->GetProperty()->SetColor(m_colorCiTarget.data());
+    m_pActor_target_desired->SetMapper(mapperTemp);
+    m_pRenderer_top->AddActor(m_pActor_target_desired);
+    m_pRenderer_top_inset->AddActor(m_pActor_target_desired);
+    m_pRenderer_oblique->AddActor(m_pActor_target_desired);
+    m_pRenderer_front->AddActor(m_pActor_target_desired);
+    m_pRenderer_front_inset->AddActor(m_pActor_target_desired);
+    m_pRenderer_side->AddActor(m_pActor_target_desired);
+    m_pRenderer_side_inset->AddActor(m_pActor_target_desired);
+
     for (int i = 0; i < numFiducialActors; i++) {
         vtkSmartPointer<vtkSphereSource> sphereSource = vtkSmartPointer<vtkSphereSource>::New();
-        sphereSource->SetCenter(0.0, 0.0, 5.0*i);
+        sphereSource->SetCenter(0.0, 0.0, 0.0);
         sphereSource->SetRadius(3.0);
         sphereSource->SetThetaResolution(16);
         sphereSource->SetPhiResolution(12);
@@ -342,6 +373,7 @@ void vtk_test::Initialize()
 	m_pActor_CItarget = pActor_CI_target;
 	m_pActor_CItool = pActor_CI_tool;
 	m_pActor_probe = pActor_probe;
+    //m_pActor_cochlea = pActor_cochlea;
 
 	slot_CenterView(QString("centerCItool"));
 }
@@ -431,6 +463,7 @@ void vtk_test::slot_onGUITimer()
 	pvtk_T_CItool->SetMatrix(CItool_transpose.data());
 	m_pActor_probe->SetUserTransform(pvtk_T_probe);
 	m_pActor_CItool->SetUserTransform(pvtk_T_CItool);
+    m_pActor_target_current->SetUserTransform(pvtk_T_CItool);
 
 	// Update alignment error
 	Update_err();
@@ -463,7 +496,6 @@ void vtk_test::slot_onGUITimer()
 	emit sgn_NewProbePosition(m_probe_transform(0,3), m_probe_transform(1, 3), m_probe_transform(2, 3));
 	emit sgn_NewCIPosition(m_CItool_transform(0,3), m_CItool_transform(1, 3), m_CItool_transform(2, 3));
     emit sgn_NewFiducialPositions(m_strayMarkers, m_numStrayMarkers);
-    //emit sgn_NewSkullPosition(m_skull_transform(0, 3), m_skull_transform(1, 3), m_skull_transform(2, 3));
     emit sgn_WriteData();
 	m_frames++;
 }
@@ -488,11 +520,23 @@ void vtk_test::slot_onRegistration(Eigen::MatrixXd T)
 
 void vtk_test::slot_CenterView(QString senderObjName)
 {
-	double cam_offset = 30; // distance to offset camera from focal point
+	double cam_offset = 40; // distance to offset camera from focal point
 
-	double targetx = m_CItarget_transform(0,3);
-	double targety = m_CItarget_transform(1,3);
-	double targetz = m_CItarget_transform(2,3);
+    double targetx = m_CItarget_transform(0, 3);
+    double targety = m_CItarget_transform(1, 3);
+    double targetz = m_CItarget_transform(2, 3);
+
+    /*double targetx, targety, targetz;
+    if (planLoaded) {
+        targetx = m_patientData->target()[0];
+        targety = m_patientData->target()[1];
+        targetz = m_patientData->target()[2];
+    }
+    else {
+        targetx = m_CItarget_transform(0, 3);
+        targety = m_CItarget_transform(1, 3);
+        targetz = m_CItarget_transform(2, 3);
+    }*/
 
 	// ensure view orientations are correct
     m_pRenderer_top->GetActiveCamera()->SetViewUp(0, 0, -1);
@@ -542,7 +586,7 @@ void vtk_test::slot_CenterView(QString senderObjName)
 		m_pRenderer_oblique->ResetCamera(m_pActor_probe->GetBounds());
 	}
 	else if (senderObjName == "centerCItarget")
-	{
+	{    
 		m_pRenderer_top->GetActiveCamera()->SetPosition(targetx, targety+cam_offset, targetz);
 		m_pRenderer_top->GetActiveCamera()->SetFocalPoint(targetx, targety,	targetz);
 		m_pRenderer_top->ResetCamera(m_pActor_CItarget->GetBounds());
@@ -563,22 +607,23 @@ void vtk_test::slot_CenterView(QString senderObjName)
 	}
 
 	// increase size of top view to fill window better
-	m_pRenderer_top->GetActiveCamera()->Zoom(3.5);
-	m_pRenderer_front->GetActiveCamera()->Zoom(1.2);
+    //m_pRenderer_top->GetActiveCamera()->Zoom(3.5);
+    m_pRenderer_top->GetActiveCamera()->Zoom(1.2);
+    m_pRenderer_front->GetActiveCamera()->Zoom(1.2);
 	m_pRenderer_side->GetActiveCamera()->Zoom(1.2);
 
 	// center inset views (always centered on target)
-	  m_pRenderer_top_inset->GetActiveCamera()->SetPosition(targetx, targety+cam_offset, targetz);
+	m_pRenderer_top_inset->GetActiveCamera()->SetPosition(targetx, targety+cam_offset, targetz);
 	m_pRenderer_front_inset->GetActiveCamera()->SetPosition(targetx, targety, targetz+cam_offset);
-	 m_pRenderer_side_inset->GetActiveCamera()->SetPosition(targetx+cam_offset, targety, targetz);
+	m_pRenderer_side_inset->GetActiveCamera()->SetPosition(targetx+cam_offset, targety, targetz);
 
-	  m_pRenderer_top_inset->GetActiveCamera()->SetFocalPoint(targetx, targety, targetz);
+	m_pRenderer_top_inset->GetActiveCamera()->SetFocalPoint(targetx, targety, targetz);
 	m_pRenderer_front_inset->GetActiveCamera()->SetFocalPoint(targetx, targety, targetz);
-	 m_pRenderer_side_inset->GetActiveCamera()->SetFocalPoint(targetx, targety, targetz);
+	m_pRenderer_side_inset->GetActiveCamera()->SetFocalPoint(targetx, targety, targetz);
 
-	  m_pRenderer_top_inset->GetActiveCamera()->SetViewUp(0, 0, -1);
+	m_pRenderer_top_inset->GetActiveCamera()->SetViewUp(0, 0, -1);
 	m_pRenderer_front_inset->GetActiveCamera()->SetViewUp(0, 1, 0);
-	 m_pRenderer_side_inset->GetActiveCamera()->SetViewUp(0, 1, 0);
+	m_pRenderer_side_inset->GetActiveCamera()->SetViewUp(0, 1, 0);
 }
 
 void vtk_test::slot_CenterTarget()
@@ -590,12 +635,12 @@ void vtk_test::slot_Load_Plan()
 {
     // open file dialog and select trajectory plan
     QString fileName = QFileDialog::getOpenFileName(NULL, "Open Patient Data File", NULL, "CI Plan (*.ini);;All Files (*.*)");
-
+    
     // parse patient data
     m_patientData = new patient_data(fileName);
-    if (m_patientData->parse())
-    {
-        connect(this, SIGNAL(sgn_NewFiducialPositions(Eigen::Matrix3Xd &, int)), this, SLOT(slot_Update_Skull(Eigen::Matrix3Xd &, int)));
+    if (m_patientData->parse()) {
+        planLoaded = true;
+        emit sgn_NewFre(0); // signals to infowidget to make live tracking checkbox checkable
     }
 }
 
@@ -622,18 +667,42 @@ void vtk_test::slot_Update_Skull(Eigen::Matrix3Xd & markers, int)
         m_pActor_fiducials.at(ii)->SetVisibility(true);
     }
 
-    // if registration was successful, update target
-    if (registration.GetFRE() <= 1.5) {
-        Eigen::ArrayXi indexMatch = registration.GetIndexMatch();
+    // ensure FRE is valid (unitialized double is very small -> ~6e-15)
+    if (registration.GetFRE() > 1e-5) {
+        emit sgn_NewFre(registration.GetFRE());
 
-        // set color for skull fiducials
-        for (qint8 ii = 0; ii < indexMatch.size(); ++ii) {
-            m_pActor_fiducials.at(indexMatch[ii])->GetProperty()->SetColor(m_colorFiducials.data());
+        // if registration was successful, update target
+        if (registration.GetFRE() <= 1.5) {
+            Eigen::ArrayXi indexMatch = registration.GetIndexMatch();
+
+            // set color for skull fiducials
+            for (qint8 ii = 0; ii < indexMatch.size(); ++ii) {
+                m_pActor_fiducials.at(indexMatch[ii])->GetProperty()->SetColor(m_colorFiducials.data());
+            }
+
+            SetTransformforCI_target(m_patientData, registration.GetTransform());
         }
-
-        SetTransformforCI_target(*m_patientData, registration.GetTransform());
+        else {
+        }
     }
-    else {
+
+    static bool firstTime = true;
+    if (firstTime) {
+        slot_CenterTarget();
+        firstTime = false;
+    }
+    
+}
+
+void vtk_test::slot_LiveTracking(int state)
+{
+    if (planLoaded) {
+        if (state) {
+            connect(this, SIGNAL(sgn_NewFiducialPositions(Eigen::Matrix3Xd &, int)), this, SLOT(slot_Update_Skull(Eigen::Matrix3Xd &, int)));
+        }
+        else {
+            disconnect(this, SIGNAL(sgn_NewFiducialPositions(Eigen::Matrix3Xd &, int)), this, SLOT(slot_Update_Skull(Eigen::Matrix3Xd &, int)));
+        }
     }
 }
 
@@ -748,18 +817,16 @@ void vtk_test::Update_err(std::vector<ToolInformationStruct> const& tools)
 //	pActor_CI_target->SetUserTransform( vtkT );
 //}
 
-void vtk_test::SetTransformforCI_target(patient_data ref_patient_data, Eigen::MatrixXd T_registration)
+void vtk_test::SetTransformforCI_target(patient_data * ref_patient_data, Eigen::MatrixXd T_registration)
 {
-	Eigen::Matrix3Xd target = ref_patient_data.target();	// returns a 1x3 column
-	Eigen::Matrix3Xd entry = ref_patient_data.axis();
+	Eigen::Matrix3Xd target = ref_patient_data->target();	// returns a 1x3 column
+	Eigen::Matrix3Xd entry = ref_patient_data->axis();
 	CI_entry = entry;
 	Eigen::MatrixXd target_reg(4,1); // create new vectors for storing the registered positions
 	Eigen::MatrixXd entry_reg(4,1); 
 
-	//target_reg.block<3,1>(0,0) = target.transpose(); // convert row to column
     target_reg.block<3, 1>(0, 0) = target;
 	target_reg(3,0) = 1;
-	//entry_reg.block<3,1>(0,0) = entry.transpose();
     entry_reg.block<3, 1>(0, 0) = entry;
 	entry_reg(3,0) = 1;
 	
@@ -782,15 +849,13 @@ void vtk_test::SetTransformforCI_target(patient_data ref_patient_data, Eigen::Ma
 	T.block<3,3>(0,0) = R;
 	T.block<4,1>(0,3) = entry_reg;
 	T = Polaris_sim_trans * T.eval() * Polaris_sim_trans;
-    T.transposeInPlace();
     //PRINT_MATRIX(T);
 
-	//vtkSmartPointer<vtkTransform> vtkT_CI = vtkSmartPointer<vtkTransform>::New();
-	//vtkT_CI->SetMatrix(T.data());
-	//m_pActor_CItarget->SetUserTransform( vtkT_CI );
-
+    m_CItarget_transform = T;
+    T.transposeInPlace();
     pvtk_T_CiTarget->SetMatrix(T.data());
     m_pActor_CItarget->SetUserTransform(pvtk_T_CiTarget);
+    m_pActor_target_desired->SetUserTransform(pvtk_T_CiTarget);
 }
 
 void vtk_test::SetTransformforCI_target(Eigen::MatrixXd T_target)
@@ -859,18 +924,23 @@ void vtk_test::slot_Register_Patient()
 	//cout << fileName.toLocal8Bit().data() << endl;
 
 	// parse patient data
-    patient_data patientData(fileName);
-    if (patientData.parse())
-    {
+    m_patientData = new patient_data(fileName);
+    if (m_patientData->parse()) {
+        planLoaded = true;
     }
 
-	Pat_Reg_Widget Pat_Reg_Widget(patientData);
+	Pat_Reg_Widget Pat_Reg_Widget(*m_patientData);
 	connect(this, SIGNAL(sgn_NewProbePosition(double,double,double) ), &Pat_Reg_Widget, SLOT(slot_onNewProbePosition(double,double,double)));
     connect(this, SIGNAL(sgn_NewFiducialPositions(Eigen::Matrix3Xd &, int)), &Pat_Reg_Widget, SLOT(slot_onNewFiducialPositions(Eigen::Matrix3Xd &, int)));
+
     Pat_Reg_Widget.exec();
 	RigidRegistration reg = Pat_Reg_Widget.GetRegistration();
+
+    disconnect(this, SIGNAL(sgn_NewProbePosition(double, double, double)), &Pat_Reg_Widget, SLOT(slot_onNewProbePosition(double, double, double)));
+    disconnect(this, SIGNAL(sgn_NewFiducialPositions(Eigen::Matrix3Xd &, int)), &Pat_Reg_Widget, SLOT(slot_onNewFiducialPositions(Eigen::Matrix3Xd &, int)));
+
 	cout << reg.GetTransform() << endl;
-	SetTransformforCI_target(patientData, reg.GetTransform());
+	SetTransformforCI_target(m_patientData, reg.GetTransform());
 }
 
 void vtk_test::slot_update_COM(int thePort) {

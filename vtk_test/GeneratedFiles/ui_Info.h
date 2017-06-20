@@ -13,6 +13,7 @@
 #include <QtWidgets/QAction>
 #include <QtWidgets/QApplication>
 #include <QtWidgets/QButtonGroup>
+#include <QtWidgets/QCheckBox>
 #include <QtWidgets/QFormLayout>
 #include <QtWidgets/QGridLayout>
 #include <QtWidgets/QGroupBox>
@@ -63,6 +64,8 @@ public:
     QLabel *label_9;
     QLabel *label_mag_z;
     QSpacerItem *horizontalSpacer_3;
+    QCheckBox *checkBox_LiveTarget;
+    QLabel *label_FRE;
     QGroupBox *ErrorBox_position;
     QGridLayout *gridLayout;
     QLabel *label_ci_err_pos;
@@ -100,10 +103,9 @@ public:
         if (Info->objectName().isEmpty())
             Info->setObjectName(QStringLiteral("Info"));
         Info->resize(518, 1284);
+        Info->setMinimumSize(QSize(0, 1284));
         verticalLayout = new QVBoxLayout(Info);
-        verticalLayout->setSpacing(0);
         verticalLayout->setObjectName(QStringLiteral("verticalLayout"));
-        verticalLayout->setContentsMargins(5, 15, 10, 2);
         probeBox = new QGroupBox(Info);
         probeBox->setObjectName(QStringLiteral("probeBox"));
         QFont font;
@@ -314,6 +316,28 @@ public:
 
         verticalLayout->addWidget(MagnetBox);
 
+        checkBox_LiveTarget = new QCheckBox(Info);
+        checkBox_LiveTarget->setObjectName(QStringLiteral("checkBox_LiveTarget"));
+        QFont font4;
+        font4.setPointSize(9);
+        checkBox_LiveTarget->setFont(font4);
+        checkBox_LiveTarget->setCheckable(false);
+        checkBox_LiveTarget->setChecked(false);
+
+        verticalLayout->addWidget(checkBox_LiveTarget);
+
+        label_FRE = new QLabel(Info);
+        label_FRE->setObjectName(QStringLiteral("label_FRE"));
+        label_FRE->setEnabled(true);
+        QSizePolicy sizePolicy1(QSizePolicy::Preferred, QSizePolicy::Fixed);
+        sizePolicy1.setHorizontalStretch(0);
+        sizePolicy1.setVerticalStretch(0);
+        sizePolicy1.setHeightForWidth(label_FRE->sizePolicy().hasHeightForWidth());
+        label_FRE->setSizePolicy(sizePolicy1);
+        label_FRE->setFont(font4);
+
+        verticalLayout->addWidget(label_FRE);
+
         ErrorBox_position = new QGroupBox(Info);
         ErrorBox_position->setObjectName(QStringLiteral("ErrorBox_position"));
         ErrorBox_position->setFont(font);
@@ -341,11 +365,11 @@ public:
 
         progressBar_CI_err_pos = new QProgressBar(ErrorBox_position);
         progressBar_CI_err_pos->setObjectName(QStringLiteral("progressBar_CI_err_pos"));
-        QSizePolicy sizePolicy1(QSizePolicy::Expanding, QSizePolicy::Fixed);
-        sizePolicy1.setHorizontalStretch(0);
-        sizePolicy1.setVerticalStretch(0);
-        sizePolicy1.setHeightForWidth(progressBar_CI_err_pos->sizePolicy().hasHeightForWidth());
-        progressBar_CI_err_pos->setSizePolicy(sizePolicy1);
+        QSizePolicy sizePolicy2(QSizePolicy::Expanding, QSizePolicy::Fixed);
+        sizePolicy2.setHorizontalStretch(0);
+        sizePolicy2.setVerticalStretch(0);
+        sizePolicy2.setHeightForWidth(progressBar_CI_err_pos->sizePolicy().hasHeightForWidth());
+        progressBar_CI_err_pos->setSizePolicy(sizePolicy2);
         progressBar_CI_err_pos->setFont(font3);
         progressBar_CI_err_pos->setValue(0);
         progressBar_CI_err_pos->setTextVisible(false);
@@ -388,12 +412,12 @@ public:
 
         label_text_error2_2 = new QLabel(ErrorBox_position);
         label_text_error2_2->setObjectName(QStringLiteral("label_text_error2_2"));
-        QFont font4;
-        font4.setPointSize(8);
-        font4.setBold(false);
-        font4.setItalic(false);
-        font4.setWeight(50);
-        label_text_error2_2->setFont(font4);
+        QFont font5;
+        font5.setPointSize(8);
+        font5.setBold(false);
+        font5.setItalic(false);
+        font5.setWeight(50);
+        label_text_error2_2->setFont(font5);
         label_text_error2_2->setAlignment(Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter);
 
         gridLayout->addWidget(label_text_error2_2, 0, 2, 1, 1);
@@ -407,7 +431,7 @@ public:
 
         label_text_error2_3 = new QLabel(ErrorBox_position);
         label_text_error2_3->setObjectName(QStringLiteral("label_text_error2_3"));
-        label_text_error2_3->setFont(font4);
+        label_text_error2_3->setFont(font5);
         label_text_error2_3->setAlignment(Qt::AlignLeading|Qt::AlignLeft|Qt::AlignVCenter);
 
         gridLayout->addWidget(label_text_error2_3, 0, 4, 1, 1);
@@ -441,8 +465,8 @@ public:
 
         progressBar_CI_err_ang = new QProgressBar(ErrorBox_angle);
         progressBar_CI_err_ang->setObjectName(QStringLiteral("progressBar_CI_err_ang"));
-        sizePolicy1.setHeightForWidth(progressBar_CI_err_ang->sizePolicy().hasHeightForWidth());
-        progressBar_CI_err_ang->setSizePolicy(sizePolicy1);
+        sizePolicy2.setHeightForWidth(progressBar_CI_err_ang->sizePolicy().hasHeightForWidth());
+        progressBar_CI_err_ang->setSizePolicy(sizePolicy2);
         progressBar_CI_err_ang->setFont(font3);
         progressBar_CI_err_ang->setValue(0);
         progressBar_CI_err_ang->setTextVisible(false);
@@ -451,7 +475,7 @@ public:
 
         label_text_error2_4 = new QLabel(ErrorBox_angle);
         label_text_error2_4->setObjectName(QStringLiteral("label_text_error2_4"));
-        label_text_error2_4->setFont(font4);
+        label_text_error2_4->setFont(font5);
         label_text_error2_4->setAlignment(Qt::AlignLeading|Qt::AlignLeft|Qt::AlignVCenter);
 
         gridLayout_4->addWidget(label_text_error2_4, 0, 4, 1, 1);
@@ -469,7 +493,7 @@ public:
 
         label_text_error2_5 = new QLabel(ErrorBox_angle);
         label_text_error2_5->setObjectName(QStringLiteral("label_text_error2_5"));
-        label_text_error2_5->setFont(font4);
+        label_text_error2_5->setFont(font5);
         label_text_error2_5->setAlignment(Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter);
 
         gridLayout_4->addWidget(label_text_error2_5, 0, 2, 1, 1);
@@ -550,6 +574,8 @@ public:
         label_mag_y->setText(QApplication::translate("Info", "-0000.00", 0));
         label_9->setText(QApplication::translate("Info", "<b>z</b>", 0));
         label_mag_z->setText(QApplication::translate("Info", "-0000.00", 0));
+        checkBox_LiveTarget->setText(QApplication::translate("Info", "Live Target Tracking", 0));
+        label_FRE->setText(QApplication::translate("Info", "FRE = ", 0));
         ErrorBox_position->setTitle(QApplication::translate("Info", "Position Error", 0));
         label_ci_err_pos->setText(QApplication::translate("Info", "000.00", 0));
         label_mag_status->setText(QString());

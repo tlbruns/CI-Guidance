@@ -419,7 +419,7 @@ void Pat_Reg_Widget::RegisterSkull()
     // update labels
     ui->label_registration_msg->setText(QString("Registered with FRE = ") + QString::number(m_registration.GetFRE(), 'f', 2) + QString("mm"));
 
-    if (m_registration.GetFRE() <= 0.4) {
+    if (m_registration.GetFRE() <= 0.6) {
         QPixmap greencheck(":/images/Resources/greencheck_small.png");
         ui->label_registration_check->setPixmap(greencheck);
         ui->button_finish->setText("Save and Finish");
