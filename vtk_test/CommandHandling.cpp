@@ -1,6 +1,7 @@
 /*****************************************************************
 MODIFIED BY TREVOR BRUNS (JUNE 2017): ADDED FUNCTION TO REQUEST 
 STRAY MARKER POSITIONS
+******************************************************************
 
 Name:			CommandHandling
 
@@ -1784,6 +1785,7 @@ int CCommandHandling::nGetTXTransformsAndStrays(bool bReturn0x0800Option)
         /* Reply Component: Reply Option 1000 Data */
 
         // number of markers
+        m_nNoStrayMarkers = 0; // reset number of strays
         int totalStrays = uASCIIToHex(pszTransformInfo, 2); // always includes any that are out of volume as well
         pszTransformInfo += 2;
 

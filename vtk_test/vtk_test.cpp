@@ -21,6 +21,7 @@
 #include <vtkSTLReader.h>
 #include <vtkPolyData.h>
 #include <vtkPolyDataMapper.h>
+#include <vtkPolyDataNormals.h>
 #include <Conversions.h>
 #include <vtkTransform.h>
 #include <vtkSmartPointer.h>
@@ -60,6 +61,7 @@ vtk_test::vtk_test(QWidget *parent)
 	m_time(0),
 	m_frames(0),
     numFiducialActors(15),
+    tubeOffset(20.0),
 	flag_SetTarget(FALSE),
 	m_CItarget_transform(Matrix4d::Identity()),
 	m_CItool_transform(Matrix4d::Identity()),
@@ -83,10 +85,14 @@ vtk_test::vtk_test(QWidget *parent)
     m_colorFiducials << 0.81, 0.37, 0.08;
     m_colorStrays    << 0.31, 0.65, 0.79;
 
-    Polaris_sim_trans << 0,-1, 0, 0, // note: inverse is equal to itself for this matrix
-                        -1, 0, 0, 0,
-                         0, 0,-1, 0,
-                         0, 0, 0, 1;
+    Polaris_sim_trans = Eigen::Matrix4d::Identity();
+
+    //Polaris_sim_trans << 0,-1, 0, 0, // note: inverse is equal to itself for this matrix
+    //                     1, 0, 0, 0,
+    //                     0, 0, 1, 0,
+    //                     0, 0, 0, 1;
+    Polaris_sim_trans_inv = Polaris_sim_trans.inverse();
+
 
 	// setup info panel on left side
 	InfoWidget *iw = new InfoWidget(this);
@@ -123,9 +129,9 @@ vtk_test::vtk_test(QWidget *parent)
 	ui.gridlayout->addWidget(m_pQVTK_side_inset, 1, 2, 1, 1, Qt::AlignBottom | Qt::AlignRight);
 
 	// setup timers
-	m_timer.setInterval(0);
-	m_timer.setSingleShot(false);
-	connect(&m_timer, SIGNAL(timeout()), this, SLOT(slot_onGUITimer()));
+	m_timerGui.setInterval(0);
+	m_timerGui.setSingleShot(false);
+	connect(&m_timerGui, SIGNAL(timeout()), this, SLOT(slot_onGUITimer()));
 	//m_timer.start();
 
 	m_frameRateTimer.setInterval(FRAME_RATE_UPDATE_INTERVAL);
@@ -184,7 +190,7 @@ void vtk_test::InitVTK() {
 	m_pRenderer_top->SetGradientBackground(true);
 
 	vtkSmartPointer<vtkCamera> camera_top = vtkSmartPointer<vtkCamera>::New();
-	camera_top->SetPosition(0, 100, 0); // XZ Plane
+	camera_top->SetPosition(-100, 0, 0); // YZ Plane
 	camera_top->SetFocalPoint(0, 0, 0);
 	camera_top->SetViewUp(0, 0, -1);
 	camera_top->SetClippingRange(-1000, 1000); // based on tracker workspace limits in x
@@ -200,7 +206,7 @@ void vtk_test::InitVTK() {
 
 	vtkSmartPointer<vtkCamera> camera_top_inset = vtkSmartPointer<vtkCamera>::New();
 	int inset_dist = 20;
-	camera_top_inset->SetPosition(0, inset_dist, 0); // XZ Plane
+	camera_top_inset->SetPosition(inset_dist, 0, 0); // YZ Plane
 	camera_top_inset->SetFocalPoint(0, 0, 0);
 	camera_top_inset->SetViewUp(0, 0, -1);
 	camera_top_inset->SetClippingRange(-1000, 1000); // based on tracker workspace limits in x
@@ -213,10 +219,10 @@ void vtk_test::InitVTK() {
 	m_pRenderer_oblique->SetGradientBackground(true);
 
 	vtkSmartPointer<vtkCamera> camera_oblique = vtkSmartPointer<vtkCamera>::New();
-	camera_oblique->SetPosition(0, 100, 0); // XZ Plane
+	camera_oblique->SetPosition(100, 100, 100);
 	camera_oblique->SetFocalPoint(0, 0, 0);
 	camera_oblique->SetViewUp(0, 0, -1);
-	camera_oblique->SetClippingRange(-1000, 1000); // based on tracker workspace limits in x
+	camera_oblique->SetClippingRange(-3000, 3000);
 	m_pRenderer_oblique->SetActiveCamera(camera_oblique);
 
 	m_pRenderer_front = vtkSmartPointer<vtkRenderer>::New();
@@ -228,8 +234,8 @@ void vtk_test::InitVTK() {
 	vtkSmartPointer<vtkCamera> camera_front = vtkSmartPointer<vtkCamera>::New();
 	camera_front->SetPosition(0, 0, 500); // XY Plane
 	camera_front->SetFocalPoint(0, 0, 0);
-	camera_front->SetViewUp(0, 1, 0);
-	camera_front->SetClippingRange(-100, 3500); // based on tracker workspace limits in z
+	camera_front->SetViewUp(-1, 0, 0);
+	camera_front->SetClippingRange(-3500, 1000); // based on tracker workspace limits in z
 	m_pRenderer_front->SetActiveCamera(camera_front);
 
 	m_pRenderer_front_inset = vtkSmartPointer<vtkRenderer>::New();
@@ -243,8 +249,8 @@ void vtk_test::InitVTK() {
 	vtkSmartPointer<vtkCamera> camera_front_inset = vtkSmartPointer<vtkCamera>::New();
 	camera_front_inset->SetPosition(0, 0, inset_dist); // XY Plane
 	camera_front_inset->SetFocalPoint(0, 0, 0);
-	camera_front_inset->SetViewUp(0, 1, 0);
-	camera_front_inset->SetClippingRange(-100, 3500); // based on tracker workspace limits in z
+	camera_front_inset->SetViewUp(-1, 0, 0);
+	camera_front_inset->SetClippingRange(-3500, 100); // based on tracker workspace limits in z
 	m_pRenderer_front_inset->SetActiveCamera(camera_front_inset);
 
 	m_pRenderer_side = vtkSmartPointer<vtkRenderer>::New();
@@ -254,10 +260,10 @@ void vtk_test::InitVTK() {
 	m_pRenderer_side->SetGradientBackground(true);
 
 	vtkSmartPointer<vtkCamera> camera_side = vtkSmartPointer<vtkCamera>::New();
-	camera_side->SetPosition(500, 0, 0); // YZ Plane
+	camera_side->SetPosition(500, 0, 0); // XZ Plane
 	camera_side->SetFocalPoint(0, 0, 0);
-	camera_side->SetViewUp(0, 1, 0);
-	camera_side->SetClippingRange(-1000, 1000); // based on tracker workspace limits in y
+	camera_side->SetViewUp(-1, 0, 0);
+	camera_side->SetClippingRange(-1000, 1000); // based on tracker workspace limits in x
 	m_pRenderer_side->SetActiveCamera(camera_side);
 
 	m_pRenderer_side_inset = vtkSmartPointer<vtkRenderer>::New();
@@ -271,8 +277,8 @@ void vtk_test::InitVTK() {
 	vtkSmartPointer<vtkCamera> camera_side_inset = vtkSmartPointer<vtkCamera>::New();
 	camera_side_inset->SetPosition(inset_dist, 0, 0); // YZ Plane
 	camera_side_inset->SetFocalPoint(0, 0, 0);
-	camera_side_inset->SetViewUp(0, 1, 0);
-	camera_side_inset->SetClippingRange(-1000, 1000); // based on tracker workspace limits in y
+	camera_side_inset->SetViewUp(-1, 0, 0);
+	camera_side_inset->SetClippingRange(-1000, 1000); // based on tracker workspace limits in x
 	m_pRenderer_side_inset->SetActiveCamera(camera_side_inset);
 
 }
@@ -280,7 +286,7 @@ void vtk_test::InitVTK() {
 void vtk_test::Initialize()
 {
     //QString ciToolFilename = QString::fromLocal8Bit("D:\\Trevor\\My Documents\\Code\\VTKtest\\vtk_test\\x64\\Release\\insertion_tool_wtarget.obj");
-    QString ciToolFilename = QString::fromLocal8Bit("D:\\Trevor\\My Documents\\Code\\VTKtest\\vtk_test\\x64\\Release\\insertion_tool_shell.obj");
+    QString ciToolFilename = QString::fromLocal8Bit("D:\\Trevor\\My Documents\\Code\\VTKtest\\vtk_test\\x64\\Release\\AIT_NoMarkers.obj");
     //QString ciToolFilename = QString::fromLocal8Bit("D:\\Trevor\\My Documents\\MED lab\\Cochlear R01\\CAD\\Insertion Tool\\mkii\\insertion_tool_shell.obj");
     vtkSmartPointer<vtkActor> pActor_CI_target = LoadOBJFile(ciToolFilename, 0.3, m_colorCiTarget.data());
     m_pRenderer_top->AddActor(pActor_CI_target);
@@ -314,15 +320,15 @@ void vtk_test::Initialize()
 
     vtkSmartPointer<vtkSphereSource> sphereTemp = vtkSmartPointer<vtkSphereSource>::New();
     sphereTemp->SetCenter(0.0, 0.0, 0.0);
-    sphereTemp->SetRadius(0.5);
+    sphereTemp->SetRadius(0.75);
     sphereTemp->SetThetaResolution(12);
     sphereTemp->SetPhiResolution(12);
     vtkSmartPointer<vtkPolyDataMapper> mapperTemp = vtkSmartPointer<vtkPolyDataMapper>::New();
     mapperTemp->SetInputConnection(sphereTemp->GetOutputPort());
 
     m_pActor_target_current = vtkSmartPointer<vtkActor>::New();
-    m_pActor_target_current->GetProperty()->SetColor(m_colorCiTool.data());
     m_pActor_target_current->SetMapper(mapperTemp);
+    m_pActor_target_current->GetProperty()->SetColor(m_colorCiTool.data());
     m_pRenderer_top->AddActor(m_pActor_target_current);
     m_pRenderer_top_inset->AddActor(m_pActor_target_current);
     m_pRenderer_oblique->AddActor(m_pActor_target_current);
@@ -332,8 +338,8 @@ void vtk_test::Initialize()
     m_pRenderer_side_inset->AddActor(m_pActor_target_current);
 
     m_pActor_target_desired = vtkSmartPointer<vtkActor>::New();
-    m_pActor_target_desired->GetProperty()->SetColor(m_colorCiTarget.data());
     m_pActor_target_desired->SetMapper(mapperTemp);
+    m_pActor_target_desired->GetProperty()->SetColor(m_colorCiTarget.data());
     m_pRenderer_top->AddActor(m_pActor_target_desired);
     m_pRenderer_top_inset->AddActor(m_pActor_target_desired);
     m_pRenderer_oblique->AddActor(m_pActor_target_desired);
@@ -369,7 +375,8 @@ void vtk_test::Initialize()
     pvtk_T_probe = vtkSmartPointer<vtkTransform>::New();
     pvtk_T_CItool = vtkSmartPointer<vtkTransform>::New();
     pvtk_T_CiTarget = vtkSmartPointer<vtkTransform>::New();
-
+    pvtk_T_target_current = vtkSmartPointer<vtkTransform>::New();
+    pvtk_T_target_desired = vtkSmartPointer<vtkTransform>::New();
 	m_pActor_CItarget = pActor_CI_target;
 	m_pActor_CItool = pActor_CI_tool;
 	m_pActor_probe = pActor_probe;
@@ -384,14 +391,12 @@ void vtk_test::slot_onGUITimer()
 	boost::ptr_vector< Eigen::Quaterniond > quat_Polaris;
 	boost::ptr_vector< Eigen::Vector3d > p;
 	boost::ptr_vector< Eigen::Matrix3d> R;
-	boost::ptr_vector< Eigen::Matrix4d > T;
-	boost::ptr_vector< Eigen::Matrix4d > Trans_final;
+	boost::ptr_vector< Eigen::Matrix4d > T_tracker_tool;
 
 	quat_Polaris.resize(NUM_TRACKED_TOOLS + 1);
 	p.resize(NUM_TRACKED_TOOLS + 1);
 	R.resize(NUM_TRACKED_TOOLS + 1);
-	T.resize(NUM_TRACKED_TOOLS + 1);
-	Trans_final.resize(NUM_TRACKED_TOOLS + 1);
+    T_tracker_tool.resize(NUM_TRACKED_TOOLS + 1);
     
     std::vector<ToolInformationStruct> tools = m_tracker->GetTransformationsAndStrays();
 
@@ -426,19 +431,45 @@ void vtk_test::slot_onGUITimer()
         }
 	}
 
-    
-
 	// convert quaternion to rotation matrix and combine with translation into a transformation matrix
 	for (int toolnum = 1; toolnum <= NUM_TRACKED_TOOLS; toolnum++) {
 		R[toolnum] = quat_Polaris[toolnum].toRotationMatrix();
-		T[toolnum] = Eigen::Matrix4d::Identity();
-		T[toolnum].block<3, 3>(0, 0) = R[toolnum];
-		T[toolnum].block<3, 1>(0, 3) = p[toolnum];
-
-		// apply similarity transform
-		Trans_final[toolnum] = Polaris_sim_trans * T[toolnum] * Polaris_sim_trans; // Polaris_sim_trans inverse is equal to itself
-        //Trans_final[toolnum] = Polaris_sim_trans*T[toolnum] * Polaris_sim_trans.inverse();
+		T_tracker_tool[toolnum] = Eigen::Matrix4d::Identity();
+		T_tracker_tool[toolnum].block<3, 3>(0, 0) = R[toolnum];
+        T_tracker_tool[toolnum].block<3, 1>(0, 3) = p[toolnum];
 	}
+
+    // probe transform in tracker frame
+    m_probe_transform = T_tracker_tool[1];
+
+    // CI tool transform in tracker frame
+    const Eigen::Affine3d tool_tip(Eigen::Translation3d(-tubeOffset, 0, 0));
+    const Eigen::Matrix4d T_tool_tip = tool_tip.matrix(); // transformation to the tip of the tube, in the tool frame
+    m_CItool_transform = T_tracker_tool[2] * T_tool_tip;
+
+    // apply safety offset from plan to the target point
+    Eigen::Matrix4d T_tracker_target; // transformation to the target point, in the tracker frame
+    if (planLoaded) {
+        Eigen::Affine3d tip_target(Eigen::Translation3d(-m_patientData->offset(), 0, 0));
+        Eigen::Matrix4d T_tip_target = tip_target.matrix(); // offset transformation, in the tool tip frame
+        T_tracker_target = m_probe_transform * T_tip_target;
+    }
+    else {
+        T_tracker_target = m_probe_transform;
+    }
+
+    // apply similarity transform to bring into screen frame
+    m_CItool_transform = Polaris_sim_trans_inv * m_CItool_transform * Polaris_sim_trans;
+    m_probe_transform  = Polaris_sim_trans_inv * m_probe_transform  * Polaris_sim_trans;
+    T_tracker_target   = Polaris_sim_trans_inv * T_tracker_target   * Polaris_sim_trans;
+
+    // vtktransform is transpose of eigen matrix
+    Matrix4d probe_transpose = m_probe_transform.transpose();
+    Matrix4d CItool_transpose = m_CItool_transform.transpose();
+    T_tracker_target.transposeInPlace();
+    pvtk_T_probe->SetMatrix(probe_transpose.data());
+    pvtk_T_CItool->SetMatrix(CItool_transpose.data());
+    pvtk_T_target_current->SetMatrix(T_tracker_target.data());
 
     // update fiducial actor positions
     Eigen::Matrix4d T_fiducial; 
@@ -446,24 +477,16 @@ void vtk_test::slot_onGUITimer()
     for (int i = 0; i < qMin(numFiducialActors,m_numStrayMarkers); i++) {
         T_fiducial = Eigen::Matrix4d::Identity();
         T_fiducial.block<3, 1>(0, 3) = m_strayMarkers.col(i);
-        T_fiducial = Polaris_sim_trans*T_fiducial * Polaris_sim_trans.inverse();
+        T_fiducial = Polaris_sim_trans_inv *T_fiducial * Polaris_sim_trans;
         T_fiducial_final = T_fiducial.transpose();
         pvtk_T_fiducials.at(i)->SetMatrix(T_fiducial_final.data());
         m_pActor_fiducials.at(i)->SetUserTransform(pvtk_T_fiducials.at(i));
     }
-
-	// Update actors with new transforms
-    m_probe_transform = Trans_final[1];
-    m_CItool_transform = Trans_final[2];
-    //m_skull_transform = Trans_final[3];
-	Matrix4d CItool_transpose = m_CItool_transform.transpose(); // vtktransform is transpose of eigen matrix
-	Matrix4d probe_transpose = m_probe_transform.transpose();
-    //Matrix4d skull_transpose = m_skull_transform.transpose();
-	pvtk_T_probe->SetMatrix(probe_transpose.data());
-	pvtk_T_CItool->SetMatrix(CItool_transpose.data());
+    
+    // Update actors with new transforms
 	m_pActor_probe->SetUserTransform(pvtk_T_probe);
 	m_pActor_CItool->SetUserTransform(pvtk_T_CItool);
-    m_pActor_target_current->SetUserTransform(pvtk_T_CItool);
+    m_pActor_target_current->SetUserTransform(pvtk_T_target_current);
 
 	// Update alignment error
 	Update_err();
@@ -520,11 +543,13 @@ void vtk_test::slot_onRegistration(Eigen::MatrixXd T)
 
 void vtk_test::slot_CenterView(QString senderObjName)
 {
-	double cam_offset = 40; // distance to offset camera from focal point
+	double cam_offset = 30; // distance to offset camera from focal point
+    double inset_offset = 15;
 
     double targetx = m_CItarget_transform(0, 3);
     double targety = m_CItarget_transform(1, 3);
     double targetz = m_CItarget_transform(2, 3);
+    
 
     /*double targetx, targety, targetz;
     if (planLoaded) {
@@ -540,8 +565,8 @@ void vtk_test::slot_CenterView(QString senderObjName)
 
 	// ensure view orientations are correct
     m_pRenderer_top->GetActiveCamera()->SetViewUp(0, 0, -1);
-    m_pRenderer_front->GetActiveCamera()->SetViewUp(0, 1, 0);
-    m_pRenderer_side->GetActiveCamera()->SetViewUp(0, 1, 0);
+    m_pRenderer_front->GetActiveCamera()->SetViewUp(-1, 0, 0);
+    m_pRenderer_side->GetActiveCamera()->SetViewUp(-1, 0, 0);
 
 	// determine sender
 	if (senderObjName == "centerCItool")
@@ -550,7 +575,7 @@ void vtk_test::slot_CenterView(QString senderObjName)
 		double tooly = m_CItool_transform(1,3);
 		double toolz = m_CItool_transform(2,3);
 
-		m_pRenderer_top->GetActiveCamera()->SetPosition(toolx, tooly+cam_offset, toolz);
+		m_pRenderer_top->GetActiveCamera()->SetPosition(toolx - cam_offset, tooly, toolz);
 		m_pRenderer_top->GetActiveCamera()->SetFocalPoint(toolx, tooly, toolz);
 		m_pRenderer_top->ResetCamera(m_pActor_CItool->GetBounds());
 
@@ -558,7 +583,7 @@ void vtk_test::slot_CenterView(QString senderObjName)
 		m_pRenderer_front->GetActiveCamera()->SetFocalPoint(toolx, tooly, toolz);
 		m_pRenderer_front->ResetCamera(m_pActor_CItool->GetBounds());
 		
-		m_pRenderer_side->GetActiveCamera()->SetPosition(toolx+cam_offset, tooly, toolz);
+		m_pRenderer_side->GetActiveCamera()->SetPosition(toolx, tooly + cam_offset, toolz);
 		m_pRenderer_side->GetActiveCamera()->SetFocalPoint(toolx, tooly, toolz);
 		m_pRenderer_side->ResetCamera(m_pActor_CItool->GetBounds());
 
@@ -570,7 +595,7 @@ void vtk_test::slot_CenterView(QString senderObjName)
 		double probex = m_probe_transform(0, 3);
 		double probey = m_probe_transform(1, 3);
 		double probez = m_probe_transform(2, 3);
-		m_pRenderer_top->GetActiveCamera()->SetPosition(probex, probey + cam_offset, probez);
+		m_pRenderer_top->GetActiveCamera()->SetPosition(probex - cam_offset, probey, probez);
 		m_pRenderer_top->GetActiveCamera()->SetFocalPoint(probex, probey, probez);
 		m_pRenderer_top->ResetCamera(m_pActor_probe->GetBounds());
 
@@ -578,7 +603,7 @@ void vtk_test::slot_CenterView(QString senderObjName)
 		m_pRenderer_front->GetActiveCamera()->SetFocalPoint(probex, probey, probez);
 		m_pRenderer_front->ResetCamera(m_pActor_probe->GetBounds());
 
-		m_pRenderer_side->GetActiveCamera()->SetPosition(probex + cam_offset, probey, probez);
+		m_pRenderer_side->GetActiveCamera()->SetPosition(probex, probey + cam_offset, probez);
 		m_pRenderer_side->GetActiveCamera()->SetFocalPoint(probex, probey, probez);
 		m_pRenderer_side->ResetCamera(m_pActor_probe->GetBounds());
 
@@ -587,7 +612,7 @@ void vtk_test::slot_CenterView(QString senderObjName)
 	}
 	else if (senderObjName == "centerCItarget")
 	{    
-		m_pRenderer_top->GetActiveCamera()->SetPosition(targetx, targety+cam_offset, targetz);
+		m_pRenderer_top->GetActiveCamera()->SetPosition(targetx - cam_offset, targety, targetz);
 		m_pRenderer_top->GetActiveCamera()->SetFocalPoint(targetx, targety,	targetz);
 		m_pRenderer_top->ResetCamera(m_pActor_CItarget->GetBounds());
 
@@ -595,7 +620,7 @@ void vtk_test::slot_CenterView(QString senderObjName)
 		m_pRenderer_front->GetActiveCamera()->SetFocalPoint(targetx, targety, targetz);
 		m_pRenderer_front->ResetCamera(m_pActor_CItarget->GetBounds());
 
-		m_pRenderer_side->GetActiveCamera()->SetPosition(targetx+cam_offset, targety, targetz);
+		m_pRenderer_side->GetActiveCamera()->SetPosition(targetx, targety + cam_offset, targetz);
 		m_pRenderer_side->GetActiveCamera()->SetFocalPoint(targetx, targety, targetz);
 		m_pRenderer_side->ResetCamera(m_pActor_CItarget->GetBounds());
 
@@ -606,24 +631,25 @@ void vtk_test::slot_CenterView(QString senderObjName)
 		return; // no match for sender name
 	}
 
-	// increase size of top view to fill window better
+	// increase size to fill window better
+    double zoom = 1.0;
+    m_pRenderer_top->GetActiveCamera()->Zoom(zoom);
     //m_pRenderer_top->GetActiveCamera()->Zoom(3.5);
-    m_pRenderer_top->GetActiveCamera()->Zoom(1.2);
-    m_pRenderer_front->GetActiveCamera()->Zoom(1.2);
-	m_pRenderer_side->GetActiveCamera()->Zoom(1.2);
+    m_pRenderer_front->GetActiveCamera()->Zoom(zoom);
+	m_pRenderer_side->GetActiveCamera()->Zoom(zoom);
 
 	// center inset views (always centered on target)
-	m_pRenderer_top_inset->GetActiveCamera()->SetPosition(targetx, targety+cam_offset, targetz);
-	m_pRenderer_front_inset->GetActiveCamera()->SetPosition(targetx, targety, targetz+cam_offset);
-	m_pRenderer_side_inset->GetActiveCamera()->SetPosition(targetx+cam_offset, targety, targetz);
+	m_pRenderer_top_inset->GetActiveCamera()->SetPosition  (targetx - cam_offset, targety, targetz);
+	m_pRenderer_front_inset->GetActiveCamera()->SetPosition(targetx, targety, targetz + inset_offset);
+	m_pRenderer_side_inset->GetActiveCamera()->SetPosition (targetx, targety + cam_offset, targetz);
 
-	m_pRenderer_top_inset->GetActiveCamera()->SetFocalPoint(targetx, targety, targetz);
+	m_pRenderer_top_inset->GetActiveCamera()->SetFocalPoint  (targetx, targety, targetz);
 	m_pRenderer_front_inset->GetActiveCamera()->SetFocalPoint(targetx, targety, targetz);
-	m_pRenderer_side_inset->GetActiveCamera()->SetFocalPoint(targetx, targety, targetz);
+	m_pRenderer_side_inset->GetActiveCamera()->SetFocalPoint (targetx, targety, targetz);
 
 	m_pRenderer_top_inset->GetActiveCamera()->SetViewUp(0, 0, -1);
-	m_pRenderer_front_inset->GetActiveCamera()->SetViewUp(0, 1, 0);
-	m_pRenderer_side_inset->GetActiveCamera()->SetViewUp(0, 1, 0);
+	m_pRenderer_front_inset->GetActiveCamera()->SetViewUp(-1, 0, 0);
+	m_pRenderer_side_inset->GetActiveCamera()->SetViewUp(-1, 0, 0);
 }
 
 void vtk_test::slot_CenterTarget()
@@ -634,7 +660,7 @@ void vtk_test::slot_CenterTarget()
 void vtk_test::slot_Load_Plan()
 {
     // open file dialog and select trajectory plan
-    QString fileName = QFileDialog::getOpenFileName(NULL, "Open Patient Data File", NULL, "CI Plan (*.ini);;All Files (*.*)");
+    QString fileName = QFileDialog::getOpenFileName(this, "Open Patient Data File", NULL, "CI Plan (*.ini);;All Files (*.*)");
     
     // parse patient data
     m_patientData = new patient_data(fileName);
@@ -652,9 +678,10 @@ void vtk_test::slot_Update_Skull(Eigen::Matrix3Xd & markers, int)
 
     Eigen::Matrix3Xd markersTrimmed = markers.block(0, 0, 3, m_numStrayMarkers); // remove extra columns
 
-    // compute registration
-    RigidRegistration registration;
-    pointRegisterOutliers(m_patientData->fiducials(), markersTrimmed, registration);
+    // compute registration to find transformation that takes points in CT frame into the tracker frame
+    // pts_tracker = T_tracker_ct * pts_ct
+    RigidRegistration T_tracker_ct;
+    pointRegisterOutliers(m_patientData->fiducials(), markersTrimmed, T_tracker_ct);
 
     // reset all markers
     for (qint8 ii = 0; ii < numFiducialActors; ++ii) {
@@ -668,19 +695,19 @@ void vtk_test::slot_Update_Skull(Eigen::Matrix3Xd & markers, int)
     }
 
     // ensure FRE is valid (unitialized double is very small -> ~6e-15)
-    if (registration.GetFRE() > 1e-5) {
-        emit sgn_NewFre(registration.GetFRE());
+    if (T_tracker_ct.GetFRE() > 1e-5) {
+        emit sgn_NewFre(T_tracker_ct.GetFRE());
 
         // if registration was successful, update target
-        if (registration.GetFRE() <= 1.5) {
-            Eigen::ArrayXi indexMatch = registration.GetIndexMatch();
+        if (T_tracker_ct.GetFRE() <= 1.5) {
+            Eigen::ArrayXi indexMatch = T_tracker_ct.GetIndexMatch();
 
             // set color for skull fiducials
             for (qint8 ii = 0; ii < indexMatch.size(); ++ii) {
                 m_pActor_fiducials.at(indexMatch[ii])->GetProperty()->SetColor(m_colorFiducials.data());
             }
 
-            SetTransformforCI_target(m_patientData, registration.GetTransform());
+            SetTransformforCI_target(m_patientData, T_tracker_ct.GetTransform());
         }
         else {
         }
@@ -709,7 +736,7 @@ void vtk_test::slot_LiveTracking(int state)
 void vtk_test::slot_Tracker_Stop() {
 	ui.actionTracker_Init->setDisabled(false);
 	ui.actionTracker_Stop->setDisabled(true);
-	m_timer.stop();
+	m_timerGui.stop();
 	m_tracker->StopTracking();
 	isTracking = false;
 }
@@ -726,7 +753,7 @@ void vtk_test::slot_Tracker_Init() {
 			cout << "Error! The tracker can no track! " << endl;
 		else {
 			cout << "Working! Starting tracking!" << endl;
-			m_timer.start();
+			m_timerGui.start();
 			ui.actionTracker_Init->setDisabled(true);
 			ui.actionTracker_Stop->setDisabled(false);
 			isTracking = true;
@@ -817,45 +844,62 @@ void vtk_test::Update_err(std::vector<ToolInformationStruct> const& tools)
 //	pActor_CI_target->SetUserTransform( vtkT );
 //}
 
-void vtk_test::SetTransformforCI_target(patient_data * ref_patient_data, Eigen::MatrixXd T_registration)
+void vtk_test::SetTransformforCI_target(patient_data * ref_patient_data, Eigen::MatrixXd T_tracker_ct)
 {
-	Eigen::Matrix3Xd target = ref_patient_data->target();	// returns a 1x3 column
-	Eigen::Matrix3Xd entry = ref_patient_data->axis();
-	CI_entry = entry;
-	Eigen::MatrixXd target_reg(4,1); // create new vectors for storing the registered positions
-	Eigen::MatrixXd entry_reg(4,1); 
+    double offset = ref_patient_data->offset(); // safety offset that sets target slightly back from the cochleostomy 
+	CI_entry = ref_patient_data->entry();
 
-    target_reg.block<3, 1>(0, 0) = target;
-	target_reg(3,0) = 1;
-    entry_reg.block<3, 1>(0, 0) = entry;
-	entry_reg(3,0) = 1;
-	
-	// apply registration to bring into camera frame
-	target_reg = T_registration*target_reg;
-	entry_reg = T_registration*entry_reg;
+	Eigen::Matrix<double,4,1> target_ct; // cochleostomy location
+    target_ct.block<3, 1>(0, 0) = ref_patient_data->target();
+    target_ct(3,0) = 1;
 
-	// move to origin and calculate axis-angle rotation w.r.t. vertical (default orientation for the CI tool)
-	Eigen::MatrixXd temp = entry - target;
-	Eigen::Vector3d traj = temp.block<3,1>(0,0);
-	Eigen::Vector3d yaxis(0,1,0);
-	Eigen::Vector3d axis = traj.cross(yaxis);
+    Eigen::Matrix<double, 4, 1> entry_ct; // used to specify the insertion axis (vector between target_ct & entry_ct)
+    entry_ct.block<3, 1>(0, 0) = ref_patient_data->entry();
+    entry_ct(3,0) = 1;
+
+	// apply registration to bring points in CT points into camera frame
+    Eigen::Matrix<double,4,1> target_tracker  = T_tracker_ct*target_ct;
+    Eigen::Matrix4d T_ct_target = Eigen::Matrix4d::Identity();
+    T_ct_target.block<4, 1>(0, 3) = target_tracker;
+    //Eigen::Matrix<double,4,1> entry_tracker = T_tracker_ct*entry_ct;
+
+	// move to origin and calculate axis-angle rotation w.r.t. vertical (-x axis in the default orientation for the CI tool)
+    Eigen::Vector3d traj =  entry_ct.block<3, 1>(0, 0) - target_ct.block<3, 1>(0, 0);
+	Eigen::Vector3d vertical(-1,0,0);
+	Eigen::Vector3d axis = traj.cross(vertical);
 	axis = axis/axis.norm();
-	double angle = acos(traj.dot(yaxis)/traj.norm());
+	double angle = acos(traj.dot(vertical)/traj.norm());
 	Eigen::AngleAxisd angleaxis(-angle,axis);
 
-	// assemble transformation matrix
-	Eigen::Matrix3d R = angleaxis.toRotationMatrix();
-	Eigen::Matrix4d T = Eigen::Matrix4d::Identity();
-	T.block<3,3>(0,0) = R;
-	T.block<4,1>(0,3) = entry_reg;
-	T = Polaris_sim_trans * T.eval() * Polaris_sim_trans;
-    //PRINT_MATRIX(T);
+	// assemble transformation for the desired insertion tool pose in the ct frame
+	Eigen::Matrix3d R_ct_tool = angleaxis.toRotationMatrix();
+	Eigen::Matrix4d T_ct_tool = Eigen::Matrix4d::Identity();
+    T_ct_tool.block<3,3>(0,0) = R_ct_tool;
+    T_ct_tool.block<4,1>(0,3) = target_ct;
+    
+    // create offset transformations (from front of insertion tool to the tip of the outer tube)
+    const Eigen::Affine3d tool_tip(Eigen::Translation3d(-tubeOffset, 0, 0)); // offset is in the x direction of the tool frame
+    const Eigen::Matrix4d T_tool_tip = tool_tip.matrix(); // transformation to the tip of the tube, in the tool frame
+    Eigen::Affine3d tip_offset(Eigen::Translation3d(-m_patientData->offset(), 0, 0));
+    Eigen::Matrix4d T_tip_offset = tip_offset.matrix(); // offset transformation, in the tool tip frame
 
-    m_CItarget_transform = T;
-    T.transposeInPlace();
-    pvtk_T_CiTarget->SetMatrix(T.data());
+    // final transformation including offsets, in the tracker frame
+    Eigen::Matrix4d T_tracker_target = T_tracker_ct * T_ct_tool * T_tool_tip * T_tip_offset;
+
+    // apply similarity transform to bring into screen frame
+    m_CItarget_transform = Polaris_sim_trans_inv * T_tracker_target * Polaris_sim_trans;
+
+    //PRINT_MATRIX(m_CItarget_transform);
+
+    // update actors
+    m_CItarget_transform.transposeInPlace();
+    pvtk_T_CiTarget->SetMatrix(m_CItarget_transform.data());
     m_pActor_CItarget->SetUserTransform(pvtk_T_CiTarget);
-    m_pActor_target_desired->SetUserTransform(pvtk_T_CiTarget);
+
+    Eigen::Matrix4d T_tracker_target_desired = T_tracker_ct * T_ct_target;
+    T_tracker_target_desired.transposeInPlace();
+    pvtk_T_target_desired->SetMatrix(T_tracker_target_desired.data());
+    m_pActor_target_desired->SetUserTransform(pvtk_T_target_desired);
 }
 
 void vtk_test::SetTransformforCI_target(Eigen::MatrixXd T_target)
@@ -869,21 +913,35 @@ vtkSmartPointer<vtkActor> vtk_test::LoadOBJFile(QString const& str,double opacit
 {
 	vtkSmartPointer<vtkOBJReader> reader = vtkSmartPointer<vtkOBJReader>::New();
 	reader->SetFileName( str.toLocal8Bit().data() );
+    reader->Update();
 	
-	vtkSmartPointer<vtkTriangleFilter> tris = vtkSmartPointer<vtkTriangleFilter>::New();
+	/*vtkSmartPointer<vtkTriangleFilter> tris = vtkSmartPointer<vtkTriangleFilter>::New();
 	tris->SetInputConnection(reader->GetOutputPort());
 	tris->GetOutput()->GlobalReleaseDataFlagOn();
 
 	vtkSmartPointer<vtkStripper> stripper = vtkSmartPointer<vtkStripper>::New();
 	stripper->SetInputConnection(tris->GetOutputPort());
-	stripper->GetOutput()->GlobalReleaseDataFlagOn();
+	stripper->GetOutput()->GlobalReleaseDataFlagOn();*/
+
+    vtkSmartPointer<vtkPolyData> polyData = vtkSmartPointer<vtkPolyData>::New();
+    polyData->DeepCopy(reader->GetOutput());
+
+    // calculate normals
+    vtkSmartPointer<vtkPolyDataNormals> normalGenerator = vtkSmartPointer<vtkPolyDataNormals>::New();
+    normalGenerator->SetInputData(polyData);
+    normalGenerator->ComputePointNormalsOn();
+    normalGenerator->ComputeCellNormalsOn();
+    normalGenerator->Update();
+
+    polyData = normalGenerator->GetOutput();
 
 	vtkSmartPointer<vtkPolyDataMapper> mapper = vtkSmartPointer<vtkPolyDataMapper>::New();
-	mapper->SetInputConnection(stripper->GetOutputPort());
-	mapper->ReleaseDataFlagOn();
+    //mapper->SetInputConnection(stripper->GetOutputPort());
+    //mapper->SetInputConnection(reader->GetOutputPort());
+    mapper->SetInputData(polyData);
+    mapper->ReleaseDataFlagOn();
 
 	vtkSmartPointer<vtkActor> pActor = vtkSmartPointer<vtkActor>::New();
-	//m_pActor = vtkActor::New();
 	pActor->GetProperty()->SetOpacity(opacity);
 	pActor->GetProperty()->SetColor(color);
 	pActor->SetMapper(mapper);
@@ -920,7 +978,7 @@ vtkSmartPointer<vtkActor> vtk_test::LoadSTLFile(QString const& str, double opaci
 void vtk_test::slot_Register_Patient()
 {
 	// open file dialog and select patient trajectory plan
-    QString fileName = QFileDialog::getOpenFileName(NULL, "Open Patient Data File", NULL, "CI Plan (*.ini);;All Files (*.*)");
+    QString fileName = QFileDialog::getOpenFileName(this, "Open Patient Data File", NULL, "CI Plan (*.ini);;All Files (*.*)");
 	//cout << fileName.toLocal8Bit().data() << endl;
 
 	// parse patient data

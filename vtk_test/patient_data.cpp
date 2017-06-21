@@ -15,8 +15,6 @@ patient_data::~patient_data(void)
 
 bool patient_data::parse(void)
 {
-    bool success = false;
-
     QSettings iniFile(iniFileName, QSettings::IniFormat);
 
     // check that file is correct format
@@ -28,36 +26,42 @@ bool patient_data::parse(void)
 
     m_date.fromString(iniFile.value("header/date").toString());
 
-    m_target << iniFile.value("plan/target/x").toFloat(),
-                iniFile.value("plan/target/y").toFloat(),
-                iniFile.value("plan/target/z").toFloat();
+    m_target << iniFile.value("plan/target/x").toDouble(),
+                iniFile.value("plan/target/y").toDouble(),
+                iniFile.value("plan/target/z").toDouble();
+    m_offset =  iniFile.value("plan/target/offset").toDouble();
 
-    m_axis << iniFile.value("plan/axis/x").toFloat(),
-              iniFile.value("plan/axis/y").toFloat(),
-              iniFile.value("plan/axis/z").toFloat();
+    m_entry << iniFile.value("plan/entry/x").toDouble(),
+               iniFile.value("plan/entry/y").toDouble(),
+               iniFile.value("plan/entry/z").toDouble();
+
+    if (m_target.isZero(1e-5) | m_offset == 0 | m_entry.isZero(1e-5)) {
+        return false;
+    }
 
     quint32 arraySize = iniFile.beginReadArray("plan/fiducials");
     m_fiducials.resize(Eigen::NoChange, arraySize); // resize to 3-by-arraySize
     for (qint32 i = 0; i < arraySize; ++i)
     {
         iniFile.setArrayIndex(i);
-        m_fiducials.col(i) << iniFile.value("x").toFloat(), 
-                              iniFile.value("y").toFloat(), 
-                              iniFile.value("z").toFloat();
+        m_fiducials.col(i) << iniFile.value("x").toDouble(),
+                              iniFile.value("y").toDouble(),
+                              iniFile.value("z").toDouble();
     }
+    iniFile.endArray();
 
     arraySize = iniFile.beginReadArray("plan/trajectory");
     m_trajectory.resize(Eigen::NoChange, arraySize);
     for (qint32 i = 0; i < arraySize; ++i)
     {
         iniFile.setArrayIndex(i);
-        m_trajectory.col(i) << iniFile.value("x").toFloat(),
-                               iniFile.value("y").toFloat(),
-                               iniFile.value("z").toFloat();
+        m_trajectory.col(i) << iniFile.value("x").toDouble(),
+                               iniFile.value("y").toDouble(),
+                               iniFile.value("z").toDouble();
     }
-    success = true;
+    iniFile.endArray();
 
-    return success;
+    return true;
 }
 
 quint32 patient_data::id()
@@ -80,14 +84,19 @@ Eigen::Matrix3Xd patient_data::trajectory() const
     return m_trajectory;
 }
 
-Eigen::Vector3d patient_data::target()
+Eigen::Vector3d patient_data::target() const
 {
     return m_target;
 }
 
-Eigen::Vector3d patient_data::axis()
+Eigen::Vector3d patient_data::entry() const
 {
-    return m_axis;
+    return m_entry;
+}
+
+double patient_data::offset() const
+{
+    return m_offset;
 }
 
 //Eigen::MatrixXd patient_data::GetPatientData() const

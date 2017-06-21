@@ -82,6 +82,7 @@ signals:
 	void sgn_WriteData();
 
 private:
+    const double tubeOffset; // [mm] Outer tube stickout. AIT pivot-calibration origin is the tube exit from the front plate. 
 	bool isTracking;
     bool planLoaded;
 	int tracker_Port;
@@ -89,7 +90,7 @@ private:
 	TrackerSetup *pTrackerSetup;
 	Ui::vtk_testClass	ui;
     patient_data    *m_patientData;
-	QTimer			m_timer;
+	QTimer			m_timerGui;
 	QTimer			m_frameRateTimer;
 	QElapsedTimer	m_datalogTimer;
 	int				m_frames;
@@ -132,10 +133,13 @@ private:
     Eigen::Vector3d  m_colorStrays;
 
     Eigen::Matrix4d Polaris_sim_trans; // similarity transform for Polaris Spectra
+    Eigen::Matrix4d Polaris_sim_trans_inv;
     vtkSmartPointer<vtkTransform>   pvtk_T_probe;
     vtkSmartPointer<vtkTransform>   pvtk_T_CItool;
     vtkSmartPointer<vtkTransform>   pvtk_T_CiTarget;
     vtkSmartPointer<vtkTransform>   pvtk_T_cochlea;
+    vtkSmartPointer<vtkTransform>   pvtk_T_target_current;
+    vtkSmartPointer<vtkTransform>   pvtk_T_target_desired;
     std::vector<vtkSmartPointer<vtkTransform>> pvtk_T_fiducials;
 
     Eigen::Matrix3Xd   m_strayMarkers;
