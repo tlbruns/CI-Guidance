@@ -153,6 +153,7 @@ private:
 	Eigen::Matrix4d		m_CItarget_transform;
     Eigen::Matrix4d     m_target_transform;
 	Eigen::Matrix4d		m_CItool_transform;
+    Eigen::Matrix4d     m_CItoolOffset_transform; // tip offset from pivot calibration dialog
 	Eigen::Matrix4d		m_probe_transform;
     Eigen::Matrix4d     m_skull_transform;
 	Eigen::MatrixXd		CI_entry;

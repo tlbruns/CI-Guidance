@@ -11,6 +11,7 @@
 #include <QtGlobal>
 #include <qscreen.h>
 #include <QVTKWidget.h>
+#include <qvector.h>
 #include <qfiledialog.h>
 #include <qfile.h>
 #include <qdatetime.h>
@@ -86,12 +87,14 @@ vtk_test::vtk_test(QWidget *parent)
     m_colorFiducials << 0.81, 0.37, 0.08;
     m_colorStrays    << 0.31, 0.65, 0.79;
 
+    m_CItoolOffset_transform = Eigen::Matrix4d::Identity();
+
     Polaris_sim_trans = Eigen::Matrix4d::Identity();
 
-    Polaris_sim_trans << 1, 0, 0, 0,
+    /*Polaris_sim_trans << 1, 0, 0, 0,
                          0,-1, 0, 0,
                          0, 0, 1, 0,
-                         0, 0, 0, 1;
+                         0, 0, 0, 1;*/
     Polaris_sim_trans_inv = Polaris_sim_trans.inverse();
 
 
@@ -410,10 +413,10 @@ void vtk_test::Initialize()
 void vtk_test::slot_onGUITimer()
 {
 	// declare variables	
-    std::vector< Eigen::Quaterniond > quat_Polaris;
-    std::vector< Eigen::Vector3d > p;
-    std::vector< Eigen::Matrix3d> R;
-    std::vector< Eigen::Matrix4d > T_tracker_tool;
+    QVector< Eigen::Quaterniond > quat_Polaris;
+    QVector< Eigen::Vector3d > p;
+    QVector< Eigen::Matrix3d> R;
+    QVector< Eigen::Matrix4d > T_tracker_tool;
 
 	quat_Polaris.resize(NUM_TRACKED_TOOLS + 1);
 	p.resize(NUM_TRACKED_TOOLS + 1);
@@ -485,6 +488,8 @@ void vtk_test::slot_onGUITimer()
     m_CItool_transform = Polaris_sim_trans_inv * T_tracker_CItool * Polaris_sim_trans;
     Matrix4d liveTarget_transform = Polaris_sim_trans_inv * T_tracker_target * Polaris_sim_trans;
     Matrix4d tube_transform = Polaris_sim_trans_inv * T_tracker_tube * Polaris_sim_trans;
+
+    emit sgn_NewToolTransform(T_tracker_CItool);
 
     // vtktransform is transpose of eigen matrix
     Matrix4d probe_transpose = m_probe_transform.transpose();
@@ -702,9 +707,12 @@ void vtk_test::slot_Load_Plan()
 void vtk_test::slot_Pivot_Calibation()
 {
     Pivot_Calibration pivotCalWidget;
-    connect(this, SIGNAL(sgn_NewToolTransform(Matrix4d)), &pivotCalWidget, SLOT(slot_onNewToolTransform(Matrix4d)));
+    connect(this, SIGNAL(sgn_NewToolTransform(Eigen::Matrix4d)), &pivotCalWidget, SLOT(slot_onNewToolTransform(Eigen::Matrix4d)));
 
     pivotCalWidget.exec();
+
+    // save the tip offset translation
+    m_CItoolOffset_transform.block<3, 1>(0, 3) = pivotCalWidget.tOffset();
 
     disconnect(this, SIGNAL(sgn_NewToolTransform(Matrix4d)), &pivotCalWidget, SLOT(slot_onNewToolTransform(Matrix4d)));
 }
