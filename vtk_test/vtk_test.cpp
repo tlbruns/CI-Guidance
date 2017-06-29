@@ -35,7 +35,6 @@
 #include <Eigen/Geometry>
 #include "infowidget.h"
 #include <cassert>
-#include <boost/ptr_container/ptr_vector.hpp>
 
 #ifndef NDEBUG
 #define PRINT_MATRIX(mat) {std::cout << #mat ##":" << std::endl << mat << std::endl;}
@@ -44,7 +43,7 @@
 #endif
 
 #define	 TRACKER_SIMULATE		0		// 1 for simulate, 0 if using tracker  NOT CURRENTLY WORKING!!
-#define  TRACKER_COMPORT		7		// NOTE: COM port is zero-indexed (N-1)
+#define  TRACKER_COMPORT		2		// NOTE: COM port is zero-indexed (N-1)
 #define	 PROBE_DESIRED_X		-79.3	// fixed position to use as the target pose
 #define	 PROBE_DESIRED_Y		-376.8	
 #define	 PROBE_DESIRED_Z		1451.95
@@ -61,7 +60,7 @@ vtk_test::vtk_test(QWidget *parent)
 	m_time(0),
 	m_frames(0),
     numFiducialActors(15),
-    tubeOffset(20.0),
+    tubeOffset(75.0),
 	flag_SetTarget(FALSE),
 	m_CItarget_transform(Matrix4d::Identity()),
 	m_CItool_transform(Matrix4d::Identity()),
@@ -81,16 +80,17 @@ vtk_test::vtk_test(QWidget *parent)
 
     m_colorCiTool    << 0.3, 1.0, 0.3;
     m_colorCiTarget  << 0.8, 0.3, 0.3;
+    m_colorCochlea << 0.75, 0.04, 0.84;
     m_colorProbe     << 0.3, 0.3, 1.0;
     m_colorFiducials << 0.81, 0.37, 0.08;
     m_colorStrays    << 0.31, 0.65, 0.79;
 
     Polaris_sim_trans = Eigen::Matrix4d::Identity();
 
-    //Polaris_sim_trans << 0,-1, 0, 0, // note: inverse is equal to itself for this matrix
-    //                     1, 0, 0, 0,
-    //                     0, 0, 1, 0,
-    //                     0, 0, 0, 1;
+    Polaris_sim_trans << 1, 0, 0, 0,
+                         0,-1, 0, 0,
+                         0, 0, 1, 0,
+                         0, 0, 0, 1;
     Polaris_sim_trans_inv = Polaris_sim_trans.inverse();
 
 
@@ -102,7 +102,7 @@ vtk_test::vtk_test(QWidget *parent)
 
 	// setup top view
 	m_pQVTK_top= new QVTKWidget(this);
-	ui.gridlayout->addWidget(m_pQVTK_top,0,1,1,1,0);		// create QT widget
+	ui.gridlayout->addWidget(m_pQVTK_top,0,1,1,1,0); // create QT widget
 	
 	// setup top inset
 	m_pQVTK_top_inset = new QVTKWidget(this);
@@ -285,9 +285,7 @@ void vtk_test::InitVTK() {
 
 void vtk_test::Initialize()
 {
-    //QString ciToolFilename = QString::fromLocal8Bit("D:\\Trevor\\My Documents\\Code\\VTKtest\\vtk_test\\x64\\Release\\insertion_tool_wtarget.obj");
-    QString ciToolFilename = QString::fromLocal8Bit("D:\\Trevor\\My Documents\\Code\\VTKtest\\vtk_test\\x64\\Release\\AIT_NoMarkers.obj");
-    //QString ciToolFilename = QString::fromLocal8Bit("D:\\Trevor\\My Documents\\MED lab\\Cochlear R01\\CAD\\Insertion Tool\\mkii\\insertion_tool_shell.obj");
+    QString ciToolFilename = QString::fromLocal8Bit("D:\\Trevor\\My Documents\\Code\\VTKtest\\vtk_test\\x64\\Release\\AIT_Markers_noTube.obj");
     vtkSmartPointer<vtkActor> pActor_CI_target = LoadOBJFile(ciToolFilename, 0.3, m_colorCiTarget.data());
     m_pRenderer_top->AddActor(pActor_CI_target);
 	m_pRenderer_top_inset->AddActor(pActor_CI_target);
@@ -297,14 +295,33 @@ void vtk_test::Initialize()
 	m_pRenderer_side->AddActor(pActor_CI_target);
 	m_pRenderer_side_inset->AddActor(pActor_CI_target);
 
+    QString guideTubeFilename = QString::fromLocal8Bit("D:\\Trevor\\My Documents\\Code\\VTKtest\\vtk_test\\x64\\Release\\Hypo_Tube_18XT_MedElFlex.obj");
+    m_pActor_guideTubeTarget = LoadOBJFile(guideTubeFilename, 1.0, m_colorCiTarget.data());
+    m_pRenderer_top->AddActor(m_pActor_guideTubeTarget);
+    m_pRenderer_top_inset->AddActor(m_pActor_guideTubeTarget);
+    m_pRenderer_oblique->AddActor(m_pActor_guideTubeTarget);
+    m_pRenderer_front->AddActor(m_pActor_guideTubeTarget);
+    m_pRenderer_front_inset->AddActor(m_pActor_guideTubeTarget);
+    m_pRenderer_side->AddActor(m_pActor_guideTubeTarget);
+    m_pRenderer_side_inset->AddActor(m_pActor_guideTubeTarget);
+
     vtkSmartPointer<vtkActor> pActor_CI_tool = LoadOBJFile(ciToolFilename, 1.0, m_colorCiTool.data());
     m_pRenderer_top->AddActor(pActor_CI_tool);
-	m_pRenderer_top_inset->AddActor(pActor_CI_tool);
-	m_pRenderer_oblique->AddActor(pActor_CI_tool);
-	m_pRenderer_front->AddActor(pActor_CI_tool);
-	m_pRenderer_front_inset->AddActor(pActor_CI_tool);
-	m_pRenderer_side->AddActor(pActor_CI_tool);
-	m_pRenderer_side_inset->AddActor(pActor_CI_tool);
+    m_pRenderer_top_inset->AddActor(pActor_CI_tool);
+    m_pRenderer_oblique->AddActor(pActor_CI_tool);
+    m_pRenderer_front->AddActor(pActor_CI_tool);
+    m_pRenderer_front_inset->AddActor(pActor_CI_tool);
+    m_pRenderer_side->AddActor(pActor_CI_tool);
+    m_pRenderer_side_inset->AddActor(pActor_CI_tool);
+
+    m_pActor_guideTube = LoadOBJFile(guideTubeFilename, 1.0, m_colorCiTool.data());
+    m_pRenderer_top->AddActor(m_pActor_guideTube);
+    m_pRenderer_top_inset->AddActor(m_pActor_guideTube);
+    m_pRenderer_oblique->AddActor(m_pActor_guideTube);
+    m_pRenderer_front->AddActor(m_pActor_guideTube);
+    m_pRenderer_front_inset->AddActor(m_pActor_guideTube);
+    m_pRenderer_side->AddActor(m_pActor_guideTube);
+    m_pRenderer_side_inset->AddActor(m_pActor_guideTube);
 
 	vtkSmartPointer<vtkActor> pActor_probe = LoadOBJFile(QString::fromLocal8Bit("D:\\Trevor\\My Documents\\Code\\VTKtest\\vtk_test\\x64\\Release\\polaris_probe.obj"), 1.0, m_colorProbe.data());
 	m_pRenderer_top->AddActor(pActor_probe);
@@ -312,11 +329,14 @@ void vtk_test::Initialize()
 	m_pRenderer_front->AddActor(pActor_probe);
 	m_pRenderer_side->AddActor(pActor_probe);
 
-    //vtkSmartPointer<vtkActor> pActor_cochlea = LoadOBJFile(QString::fromLocal8Bit("D:\\Trevor\\My Documents\\Code\\VTKtest\\vtk_test\\x64\\Release\\scala_tympani.obj"), 1.0, m_colorProbe.data());
-    //m_pRenderer_top->AddActor(pActor_cochlea);
-    //m_pRenderer_oblique->AddActor(pActor_cochlea);
-    //m_pRenderer_front->AddActor(pActor_cochlea);
-    //m_pRenderer_side->AddActor(pActor_cochlea);
+    m_pActor_cochlea = LoadSTLFile(QString::fromLocal8Bit("D:\\Trevor\\My Documents\\MED lab\\Cochlear R01\\Code\\Magnetic Steering\\ImageData\\MagSteeringTest01\\structures_LPS\\MagSteeringTest01_Cochlea.stl"), 1.0, m_colorCochlea.data());
+    m_pRenderer_top->AddActor(m_pActor_cochlea);
+    m_pRenderer_top_inset->AddActor(m_pActor_cochlea);
+    m_pRenderer_oblique->AddActor(m_pActor_cochlea);
+    m_pRenderer_front->AddActor(m_pActor_cochlea);
+    m_pRenderer_front_inset->AddActor(m_pActor_CItarget);
+    m_pRenderer_side->AddActor(m_pActor_cochlea);
+    m_pRenderer_side_inset->AddActor(m_pActor_cochlea);
 
     vtkSmartPointer<vtkSphereSource> sphereTemp = vtkSmartPointer<vtkSphereSource>::New();
     sphereTemp->SetCenter(0.0, 0.0, 0.0);
@@ -388,10 +408,10 @@ void vtk_test::Initialize()
 void vtk_test::slot_onGUITimer()
 {
 	// declare variables	
-	boost::ptr_vector< Eigen::Quaterniond > quat_Polaris;
-	boost::ptr_vector< Eigen::Vector3d > p;
-	boost::ptr_vector< Eigen::Matrix3d> R;
-	boost::ptr_vector< Eigen::Matrix4d > T_tracker_tool;
+    std::vector< Eigen::Quaterniond > quat_Polaris;
+    std::vector< Eigen::Vector3d > p;
+    std::vector< Eigen::Matrix3d> R;
+    std::vector< Eigen::Matrix4d > T_tracker_tool;
 
 	quat_Polaris.resize(NUM_TRACKED_TOOLS + 1);
 	p.resize(NUM_TRACKED_TOOLS + 1);
@@ -439,37 +459,42 @@ void vtk_test::slot_onGUITimer()
         T_tracker_tool[toolnum].block<3, 1>(0, 3) = p[toolnum];
 	}
 
-    // probe transform in tracker frame
-    m_probe_transform = T_tracker_tool[1];
+    Matrix4d T_tracker_probe  = T_tracker_tool[1]; // probe transform in tracker frame
+    Matrix4d T_tracker_CItool   = T_tracker_tool[2]; // insertion tool transform in tracker frame
 
-    // CI tool transform in tracker frame
-    const Eigen::Affine3d tool_tip(Eigen::Translation3d(-tubeOffset, 0, 0));
-    const Eigen::Matrix4d T_tool_tip = tool_tip.matrix(); // transformation to the tip of the tube, in the tool frame
-    m_CItool_transform = T_tracker_tool[2] * T_tool_tip;
+    // T_tracker_tube: transform for the guide tube, in tracker frame
+    const Eigen::Affine3d CItool_tube(Eigen::Translation3d(tubeOffset, 0, 0));
+    const Matrix4d T_CItool_tube = CItool_tube.matrix(); // transformation to the tip of the tube, in the tool frame
+    Matrix4d T_tracker_tube = T_tracker_CItool * T_CItool_tube;
 
-    // apply safety offset from plan to the target point
-    Eigen::Matrix4d T_tracker_target; // transformation to the target point, in the tracker frame
+    // apply safety offset from loaded .ini plan to get the target point
+    Matrix4d T_tracker_target; // transformation to the target point, in the tracker frame
     if (planLoaded) {
-        Eigen::Affine3d tip_target(Eigen::Translation3d(-m_patientData->offset(), 0, 0));
-        Eigen::Matrix4d T_tip_target = tip_target.matrix(); // offset transformation, in the tool tip frame
-        T_tracker_target = m_probe_transform * T_tip_target;
+        Eigen::Affine3d tube_target(Eigen::Translation3d(m_patientData->offset(), 0, 0));
+        Matrix4d T_tube_target = tube_target.matrix(); // offset transformation, in the tool tip frame
+        T_tracker_target = T_tracker_tube * T_tube_target;
     }
     else {
-        T_tracker_target = m_probe_transform;
+        T_tracker_target = T_tracker_tube; // puts target at tip of guide tube (same as when safety offset = 0)
     }
 
     // apply similarity transform to bring into screen frame
-    m_CItool_transform = Polaris_sim_trans_inv * m_CItool_transform * Polaris_sim_trans;
-    m_probe_transform  = Polaris_sim_trans_inv * m_probe_transform  * Polaris_sim_trans;
-    T_tracker_target   = Polaris_sim_trans_inv * T_tracker_target   * Polaris_sim_trans;
+    m_probe_transform = Polaris_sim_trans_inv * T_tracker_probe  * Polaris_sim_trans;
+    m_CItool_transform = Polaris_sim_trans_inv * T_tracker_CItool * Polaris_sim_trans;
+    Matrix4d liveTarget_transform = Polaris_sim_trans_inv * T_tracker_target * Polaris_sim_trans;
+    Matrix4d tube_transform = Polaris_sim_trans_inv * T_tracker_tube * Polaris_sim_trans;
 
     // vtktransform is transpose of eigen matrix
     Matrix4d probe_transpose = m_probe_transform.transpose();
     Matrix4d CItool_transpose = m_CItool_transform.transpose();
-    T_tracker_target.transposeInPlace();
+    Matrix4d liveTarget_transpose = liveTarget_transform.transpose();
+    Matrix4d tube_transpose = tube_transform.transpose();
+
     pvtk_T_probe->SetMatrix(probe_transpose.data());
     pvtk_T_CItool->SetMatrix(CItool_transpose.data());
-    pvtk_T_target_current->SetMatrix(T_tracker_target.data());
+    pvtk_T_target_current->SetMatrix(liveTarget_transpose.data());
+    vtkSmartPointer<vtkTransform>   vtkT_tracker_tube = vtkSmartPointer<vtkTransform>::New();
+    vtkT_tracker_tube->SetMatrix(tube_transpose.data());
 
     // update fiducial actor positions
     Eigen::Matrix4d T_fiducial; 
@@ -477,7 +502,7 @@ void vtk_test::slot_onGUITimer()
     for (int i = 0; i < qMin(numFiducialActors,m_numStrayMarkers); i++) {
         T_fiducial = Eigen::Matrix4d::Identity();
         T_fiducial.block<3, 1>(0, 3) = m_strayMarkers.col(i);
-        T_fiducial = Polaris_sim_trans_inv *T_fiducial * Polaris_sim_trans;
+        T_fiducial = Polaris_sim_trans_inv * T_fiducial * Polaris_sim_trans;
         T_fiducial_final = T_fiducial.transpose();
         pvtk_T_fiducials.at(i)->SetMatrix(T_fiducial_final.data());
         m_pActor_fiducials.at(i)->SetUserTransform(pvtk_T_fiducials.at(i));
@@ -487,6 +512,7 @@ void vtk_test::slot_onGUITimer()
 	m_pActor_probe->SetUserTransform(pvtk_T_probe);
 	m_pActor_CItool->SetUserTransform(pvtk_T_CItool);
     m_pActor_target_current->SetUserTransform(pvtk_T_target_current);
+    m_pActor_guideTube->SetUserTransform(vtkT_tracker_tube);
 
 	// Update alignment error
 	Update_err();
@@ -505,7 +531,8 @@ void vtk_test::slot_onGUITimer()
 		flag_SetTarget = FALSE;
 	}
 
-    m_pActor_probe->SetVisibility(false); // hide probe
+    //m_pActor_probe->SetVisibility(false); // hide probe
+    //m_pActor_cochlea->SetVisibility(false); // hide cochlea
 
 	// update QVTKWidgets
 	m_pQVTK_top->update();
@@ -546,9 +573,9 @@ void vtk_test::slot_CenterView(QString senderObjName)
 	double cam_offset = 30; // distance to offset camera from focal point
     double inset_offset = 15;
 
-    double targetx = m_CItarget_transform(0, 3);
-    double targety = m_CItarget_transform(1, 3);
-    double targetz = m_CItarget_transform(2, 3);
+    double targetx = m_target_transform(0, 3);
+    double targety = m_target_transform(1, 3);
+    double targetz = m_target_transform(2, 3);
     
 
     /*double targetx, targety, targetz;
@@ -773,36 +800,37 @@ void vtk_test::Update_err()
 	m_errors.y = Hti(1,3);
 	m_errors.z = Hti(2,3);
 
-	// errors tangential and perpendicular to trajectory axis (yhat)
-	Vector2d radial(m_errors.x, m_errors.z);
+	// errors tangential and perpendicular to trajectory axis (xhat)
+	Vector2d radial(m_errors.y, m_errors.z);
 	m_errors.radial = radial.norm();
-	m_errors.axial = m_errors.y;
+	m_errors.axial = m_errors.x;
 
-	// angular error between trajectory axes (y)
-	// y_i = Hti.block<3,1>(0,1).   dot(y_i,[0;1;0]) = y_i(2) = Hti(1,1)
-	m_errors.theta = acos(Hti(1, 1)); // [rad]
+	// angular error between trajectory axes (x)
+    // y_i = Hti.block<3,1>(0,1);   dot(y_i,[0;1;0]) = y_i(1) = Hti(1,1)
+    // x_i = Hti.block<3,1>(0,0);   dot(x_i,[1;0;0]) = x_i(0) = Hti(0,0)
+    m_errors.theta = acos(Hti(0, 0)); // [rad]
 
 	// Find axis of rotation corresponding to theta
-	// (orthogonal to y_i and y_t)
+	// (orthogonal to x_i and x_t)
 	Vector3d axis_theta;
 	if (m_errors.theta == 0.0) // can realistically only occur in simulation
 	{
-		axis_theta = Vector3d::UnitX(); // arbitrary because theta = 0, just can't be NAN
+		axis_theta = Vector3d::UnitY(); // arbitrary because theta = 0, just can't be NAN
 	}
 	else
 	{
-		axis_theta = Hti.block<3,1>(0,1).cross(Vector3d::UnitY());
+		axis_theta = Hti.block<3,1>(0,0).cross(Vector3d::UnitX());
 		axis_theta.normalize();
 	}
 
-	// Rotate to align y axes and make xy planes coplanar
+	// Rotate to align x axes and make xy planes coplanar
 	Matrix3d R_theta;
 	R_theta = AngleAxisd(m_errors.theta, axis_theta);
-	Matrix3d R_yalign = R_theta*Hti.block<3, 3>(0, 0);
+	Matrix3d R_xalign = R_theta*Hti.block<3, 3>(0, 0);
 
-	// Find angular error about the y axis
-	// dot product of x column and xhat is just R_yalign(0,0)
-	m_errors.phi = acos(R_yalign(0, 0));
+	// Find angular error about the x axis
+	// dot product of y column and yhat is just R_xalign(1,1)
+	m_errors.phi = acos(R_xalign(1, 1));
 
 	/*cout << "CItarget:" << endl << m_CItarget_transform << endl;
 	cout << "CItool:"	<< endl << m_CItool_transform << endl;
@@ -814,92 +842,95 @@ void vtk_test::Update_err()
 	emit sgn_err_ang(m_errors.theta);
 }
 
-void vtk_test::Update_err(std::vector<ToolInformationStruct> const& tools)
-{
-	if (CI_entry.rows() > 0)	// check if value has been set (via registration)
-	{
-		double tip_err = sqrt( pow((-tools[2].y - (CI_entry(0,0))),2) + // tracker frame vs tool frame: -y->x, -x->y, -z->z
-							   pow((-tools[2].x - (CI_entry(0,1))),2) +
-							   pow((-tools[2].z - (CI_entry(0,2))),2) );
-		emit sgn_err(tip_err, 100);
-	}
-
-	
-	//double tip_err = sqrt( pow((-tools[2].y - (PROBE_DESIRED_X)),2) + 
-	//					   pow((-tools[2].x - (PROBE_DESIRED_Y)),2) +
-	//					   pow((-tools[2].z - (PROBE_DESIRED_Z)),2) );
-}
-
-//void SetTransformForCI_target( vtkSmartPointer<vtkActor> pActor_CI_target )
+//void vtk_test::Update_err(std::vector<ToolInformationStruct> const& tools)
 //{
-//	Eigen::MatrixXd T = Eigen::MatrixXd::Identity(4,4);
-//	T(0,3) = PROBE_DESIRED_X;
-//	T(1,3) = PROBE_DESIRED_Y;
-//	T(2,3) = PROBE_DESIRED_Z;
+//	if (CI_entry.rows() > 0)	// check if value has been set (via registration)
+//	{
+//		double tip_err = sqrt( pow((-tools[2].y - (CI_entry(0,0))),2) + // tracker frame vs tool frame: -y->x, -x->y, -z->z
+//							   pow((-tools[2].x - (CI_entry(0,1))),2) +
+//							   pow((-tools[2].z - (CI_entry(0,2))),2) );
+//		emit sgn_err(tip_err, 100);
+//	}
 //
-//	T = T.transpose().eval();
-//
-//	vtkSmartPointer<vtkTransform> vtkT = vtkSmartPointer<vtkTransform>::New();
-//	vtkT->SetMatrix( T.data() );
-//	pActor_CI_target->SetUserTransform( vtkT );
+//	
+//	//double tip_err = sqrt( pow((-tools[2].y - (PROBE_DESIRED_X)),2) + 
+//	//					   pow((-tools[2].x - (PROBE_DESIRED_Y)),2) +
+//	//					   pow((-tools[2].z - (PROBE_DESIRED_Z)),2) );
 //}
 
-void vtk_test::SetTransformforCI_target(patient_data * ref_patient_data, Eigen::MatrixXd T_tracker_ct)
+void vtk_test::SetTransformforCI_target(patient_data * ref_patient_data, Eigen::Matrix4d T_tracker_ct)
 {
-    double offset = ref_patient_data->offset(); // safety offset that sets target slightly back from the cochleostomy 
-	CI_entry = ref_patient_data->entry();
+    /* 
+        We want to find T_tracker_tool: the transformation for the desired tool pose in the tracker frame
+        T_tracker_tool = T_tracker_ct * T_ct_tool
+        We know T_tracker_ct, so we just need T_ct_tool
+    */
 
-	Eigen::Matrix<double,4,1> target_ct; // cochleostomy location
-    target_ct.block<3, 1>(0, 0) = ref_patient_data->target();
-    target_ct(3,0) = 1;
+    /* T_ct_target: transformation for the target in the ct frame */
+    // first we need R_ct_target, which rotates the tool axis towards the target
+    // create trajectory vector and calculate axis-angle rotation w.r.t. tool axis (x axis in the default orientation for the CI tool)
+    Eigen::Vector3d trajAxis = ref_patient_data->target() - ref_patient_data->entry(); // vector pointing towards the target
+    Eigen::Vector3d toolAxis(1, 0, 0);
+    Eigen::Vector3d rotAxis = trajAxis.cross(toolAxis); // rotation axis to bring toolAxis to trajAxis
+    rotAxis = rotAxis / rotAxis.norm(); // normalize
+    double angle = acos(trajAxis.dot(toolAxis) / trajAxis.norm()); // angle between toolAxis and trajAxis
+    Eigen::AngleAxisd angleaxis(-angle, rotAxis); // angle is negative since we want to rotate the tool to the trajectory
+    Eigen::Matrix3d R_ct_target = angleaxis.toRotationMatrix();
 
-    Eigen::Matrix<double, 4, 1> entry_ct; // used to specify the insertion axis (vector between target_ct & entry_ct)
-    entry_ct.block<3, 1>(0, 0) = ref_patient_data->entry();
-    entry_ct(3,0) = 1;
-
-	// apply registration to bring points in CT points into camera frame
-    Eigen::Matrix<double,4,1> target_tracker  = T_tracker_ct*target_ct;
+    // assemble T_ct_target
     Eigen::Matrix4d T_ct_target = Eigen::Matrix4d::Identity();
-    T_ct_target.block<4, 1>(0, 3) = target_tracker;
-    //Eigen::Matrix<double,4,1> entry_tracker = T_tracker_ct*entry_ct;
+    T_ct_target.block<3, 3>(0, 0) = R_ct_target;
+    T_ct_target.block<3, 1>(0, 3) = ref_patient_data->target();
 
-	// move to origin and calculate axis-angle rotation w.r.t. vertical (-x axis in the default orientation for the CI tool)
-    Eigen::Vector3d traj =  entry_ct.block<3, 1>(0, 0) - target_ct.block<3, 1>(0, 0);
-	Eigen::Vector3d vertical(-1,0,0);
-	Eigen::Vector3d axis = traj.cross(vertical);
-	axis = axis/axis.norm();
-	double angle = acos(traj.dot(vertical)/traj.norm());
-	Eigen::AngleAxisd angleaxis(-angle,axis);
 
-	// assemble transformation for the desired insertion tool pose in the ct frame
-	Eigen::Matrix3d R_ct_tool = angleaxis.toRotationMatrix();
-	Eigen::Matrix4d T_ct_tool = Eigen::Matrix4d::Identity();
-    T_ct_tool.block<3,3>(0,0) = R_ct_tool;
-    T_ct_tool.block<4,1>(0,3) = target_ct;
+    /* T_target_offset: transformation for the safety offset in the target frame (which we choose to be the same orientation as the tool frame) */
+    // T_target_offset = (T_offset_target)^-1, which we can assemble directly since there is no rotation component
+    Eigen::Matrix4d T_target_offset = Eigen::Matrix4d::Identity();
+    T_target_offset.block<3, 1>(0, 3) = Eigen::Vector3d(-ref_patient_data->offset(), 0, 0); // use negative offset since we want the inverse (only valid since no rotation)
+
+
+    /* T_offset_tool: transformation to tool base in the offset frame (which we choose to be the same orientation as the tool frame */
+    // T_offset_tool = (T_tool_offset)^-1
+    Eigen::Matrix4d T_offset_tool = Eigen::Matrix4d::Identity();
+    T_offset_tool.block<3, 1>(0, 3) = Eigen::Vector3d(-tubeOffset, 0, 0); // use negative offset since we want the inverse
+
+
+    /* T_tracker_target: tranformation for the target point, in the tracker frame */
+    Eigen::Matrix4d T_tracker_target = T_tracker_ct * T_ct_target;
     
-    // create offset transformations (from front of insertion tool to the tip of the outer tube)
-    const Eigen::Affine3d tool_tip(Eigen::Translation3d(-tubeOffset, 0, 0)); // offset is in the x direction of the tool frame
-    const Eigen::Matrix4d T_tool_tip = tool_tip.matrix(); // transformation to the tip of the tube, in the tool frame
-    Eigen::Affine3d tip_offset(Eigen::Translation3d(-m_patientData->offset(), 0, 0));
-    Eigen::Matrix4d T_tip_offset = tip_offset.matrix(); // offset transformation, in the tool tip frame
+    /* T_tracker_offset: transformation for the tip of the guide tube, in the tracker frame */
+    Eigen::Matrix4d T_tracker_offset = T_tracker_target * T_target_offset;
 
-    // final transformation including offsets, in the tracker frame
-    Eigen::Matrix4d T_tracker_target = T_tracker_ct * T_ct_tool * T_tool_tip * T_tip_offset;
+    /* T_tracker_tool: transformation for the desired tool pose, in the tracker frame */
+    Eigen::Matrix4d T_tracker_tool = T_tracker_offset * T_offset_tool;
 
     // apply similarity transform to bring into screen frame
-    m_CItarget_transform = Polaris_sim_trans_inv * T_tracker_target * Polaris_sim_trans;
+    m_CItarget_transform = Polaris_sim_trans_inv * T_tracker_tool * Polaris_sim_trans;
+    Matrix4d tubeTarget_transform = Polaris_sim_trans_inv * T_tracker_offset * Polaris_sim_trans;
+    m_target_transform = Polaris_sim_trans_inv * T_tracker_target * Polaris_sim_trans;
+    //Matrix4d cochlea_transform = Matrix4d::Identity();
+    Matrix4d cochlea_transform = Polaris_sim_trans_inv * T_tracker_ct * Polaris_sim_trans;
 
-    //PRINT_MATRIX(m_CItarget_transform);
+    /* Update Actors */
+    Matrix4d target_transpose = m_target_transform.transpose();
+    vtkSmartPointer<vtkTransform> vtkT_target = vtkSmartPointer<vtkTransform>::New();
+    vtkT_target->SetMatrix(target_transpose.data());
+    m_pActor_target_desired->SetUserTransform(vtkT_target);
 
-    // update actors
-    m_CItarget_transform.transposeInPlace();
-    pvtk_T_CiTarget->SetMatrix(m_CItarget_transform.data());
-    m_pActor_CItarget->SetUserTransform(pvtk_T_CiTarget);
+    Matrix4d tube_transpose = tubeTarget_transform.transpose();
+    vtkSmartPointer<vtkTransform> vtkT_tube = vtkSmartPointer<vtkTransform>::New();
+    vtkT_tube->SetMatrix(tube_transpose.data());
+    m_pActor_guideTubeTarget->SetUserTransform(vtkT_tube);
 
-    Eigen::Matrix4d T_tracker_target_desired = T_tracker_ct * T_ct_target;
-    T_tracker_target_desired.transposeInPlace();
-    pvtk_T_target_desired->SetMatrix(T_tracker_target_desired.data());
-    m_pActor_target_desired->SetUserTransform(pvtk_T_target_desired);
+    Matrix4d CItarget_transpose = m_CItarget_transform.transpose();
+    vtkSmartPointer<vtkTransform> vtkT_tool = vtkSmartPointer<vtkTransform>::New();
+    vtkT_tool->SetMatrix(CItarget_transpose.data());
+    m_pActor_CItarget->SetUserTransform(vtkT_tool);
+
+    Matrix4d cochlea_transpose = cochlea_transform.transpose();
+    vtkSmartPointer<vtkTransform> vtkT_tracker_ct = vtkSmartPointer<vtkTransform>::New();
+    vtkT_tracker_ct->SetMatrix(cochlea_transpose.data());
+    m_pActor_cochlea->SetUserTransform(vtkT_tracker_ct);
 }
 
 void vtk_test::SetTransformforCI_target(Eigen::MatrixXd T_target)
@@ -962,15 +993,27 @@ vtkSmartPointer<vtkActor> vtk_test::LoadSTLFile(QString const& str, double opaci
 	stripper->SetInputConnection(tris->GetOutputPort());
 	stripper->GetOutput()->GlobalReleaseDataFlagOn();
 
-	vtkSmartPointer<vtkPolyDataMapper> mapper = vtkSmartPointer<vtkPolyDataMapper>::New();
-	mapper->SetInputConnection(stripper->GetOutputPort());
-	mapper->ReleaseDataFlagOn();
+    //vtkSmartPointer<vtkPolyData> polyData = vtkSmartPointer<vtkPolyData>::New();
+    //polyData->DeepCopy(reader->GetOutput());
 
-	vtkSmartPointer<vtkActor> pActor = vtkSmartPointer<vtkActor>::New();
-	//m_pActor = vtkActor::New();
-	pActor->GetProperty()->SetOpacity(opacity);
-	pActor->GetProperty()->SetColor(color);
-	pActor->SetMapper(mapper);
+    //// calculate normals
+    //vtkSmartPointer<vtkPolyDataNormals> normalGenerator = vtkSmartPointer<vtkPolyDataNormals>::New();
+    //normalGenerator->SetInputData(polyData);
+    //normalGenerator->ComputePointNormalsOn();
+    //normalGenerator->ComputeCellNormalsOn();
+    //normalGenerator->Update();
+
+    //polyData = normalGenerator->GetOutput();
+
+    vtkSmartPointer<vtkPolyDataMapper> mapper = vtkSmartPointer<vtkPolyDataMapper>::New();
+    mapper->SetInputConnection(stripper->GetOutputPort());
+    //mapper->SetInputData(polyData);
+    mapper->ReleaseDataFlagOn();
+
+    vtkSmartPointer<vtkActor> pActor = vtkSmartPointer<vtkActor>::New();
+    pActor->GetProperty()->SetOpacity(opacity);
+    pActor->GetProperty()->SetColor(color);
+    pActor->SetMapper(mapper);
 
 	return pActor;
 }

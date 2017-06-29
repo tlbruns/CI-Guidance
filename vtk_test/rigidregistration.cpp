@@ -119,12 +119,12 @@ int pointRegisterOutliers(MatrixXd ptsX, MatrixXd ptsY, RigidRegistration & reg)
     */
 
     if (ptsX.rows() != ptsY.rows()) {
-        //qDebug() << "Both vectors of points must have the same number of rows (same dimension)";
+        qDebug() << "Both vectors of points must have the same number of rows (same dimension)";
         return -1;
     }
 
     if (ptsX.cols() > ptsY.cols()) {
-        //qDebug() << "Y must have at least as many points as X";
+        qDebug() << "Y must have at least as many points as X";
         return -1;
     }
 

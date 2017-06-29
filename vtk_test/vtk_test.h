@@ -42,7 +42,7 @@ public:
 	vtkSmartPointer<vtkActor> LoadOBJFile(QString const& str, double opacity, double color[3]) const;
 	void Initialize();
 	vtkSmartPointer<vtkActor> LoadSTLFile(QString const & str, double opacity, double color[3]) const;
-	void SetTransformforCI_target(patient_data *, Eigen::MatrixXd);
+	void SetTransformforCI_target(patient_data *, Eigen::Matrix4d);
 	void SetTransformforCI_target(Eigen::MatrixXd);
 
 protected:
@@ -82,7 +82,7 @@ signals:
 	void sgn_WriteData();
 
 private:
-    const double tubeOffset; // [mm] Outer tube stickout. AIT pivot-calibration origin is the tube exit from the front plate. 
+    double tubeOffset; // [mm] Outer tube stickout. AIT pivot-calibration origin is the tube exit from the front plate. 
 	bool isTracking;
     bool planLoaded;
 	int tracker_Port;
@@ -120,6 +120,8 @@ private:
 	vtkSmartPointer<vtkActor>		m_pActor_probe;
 	vtkSmartPointer<vtkActor>		m_pActor_CItool;
 	vtkSmartPointer<vtkActor>		m_pActor_CItarget;
+    vtkSmartPointer<vtkActor>       m_pActor_guideTube;
+    vtkSmartPointer<vtkActor>       m_pActor_guideTubeTarget;
     vtkSmartPointer<vtkActor>       m_pActor_cochlea;
     vtkSmartPointer<vtkActor>       m_pActor_target_desired;
     vtkSmartPointer<vtkActor>       m_pActor_target_current;
@@ -128,6 +130,7 @@ private:
 
     Eigen::Vector3d  m_colorCiTool;
     Eigen::Vector3d  m_colorCiTarget;
+    Eigen::Vector3d  m_colorCochlea;
     Eigen::Vector3d  m_colorProbe;
     Eigen::Vector3d  m_colorFiducials;
     Eigen::Vector3d  m_colorStrays;
@@ -137,7 +140,6 @@ private:
     vtkSmartPointer<vtkTransform>   pvtk_T_probe;
     vtkSmartPointer<vtkTransform>   pvtk_T_CItool;
     vtkSmartPointer<vtkTransform>   pvtk_T_CiTarget;
-    vtkSmartPointer<vtkTransform>   pvtk_T_cochlea;
     vtkSmartPointer<vtkTransform>   pvtk_T_target_current;
     vtkSmartPointer<vtkTransform>   pvtk_T_target_desired;
     std::vector<vtkSmartPointer<vtkTransform>> pvtk_T_fiducials;
@@ -147,13 +149,14 @@ private:
 
 	RotationMatrix		dtRotMatrix;
 	Eigen::Matrix4d		m_CItarget_transform;
+    Eigen::Matrix4d     m_target_transform;
 	Eigen::Matrix4d		m_CItool_transform;
 	Eigen::Matrix4d		m_probe_transform;
     Eigen::Matrix4d     m_skull_transform;
 	Eigen::MatrixXd		CI_entry;
 	bool				flag_SetTarget;
 	AlignmentErrors		m_errors;
-	void Update_err(std::vector<ToolInformationStruct> const& tools);
+	//void Update_err(std::vector<ToolInformationStruct> const& tools);
 	void Update_err();
 	void InitVTK();
 };
