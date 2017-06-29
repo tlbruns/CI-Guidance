@@ -122,6 +122,15 @@
     <ClCompile Include="TrackerSetup.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="Pivot_Calibration.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="GeneratedFiles\Debug\moc_Pivot_Calibration.cpp">
+      <Filter>Generated Files\Debug</Filter>
+    </ClCompile>
+    <ClCompile Include="GeneratedFiles\Release\moc_Pivot_Calibration.cpp">
+      <Filter>Generated Files\Release</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <CustomBuild Include="vtk_test.h">
@@ -158,6 +167,12 @@
       <Filter>Form Files</Filter>
     </CustomBuild>
     <CustomBuild Include="TrackerSetup.h">
+      <Filter>Header Files</Filter>
+    </CustomBuild>
+    <CustomBuild Include="Pivot_Calibration.ui">
+      <Filter>Form Files</Filter>
+    </CustomBuild>
+    <CustomBuild Include="Pivot_Calibration.h">
       <Filter>Header Files</Filter>
     </CustomBuild>
   </ItemGroup>
@@ -205,6 +220,9 @@
       <Filter>Generated Files</Filter>
     </ClInclude>
     <ClInclude Include="GeneratedFiles\ui_TrackerSetup.h">
+      <Filter>Generated Files</Filter>
+    </ClInclude>
+    <ClInclude Include="GeneratedFiles\ui_Pivot_Calibration.h">
       <Filter>Generated Files</Filter>
     </ClInclude>
   </ItemGroup>

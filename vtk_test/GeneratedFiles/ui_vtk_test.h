@@ -37,6 +37,7 @@ public:
     QAction *actionTracker_Stop;
     QAction *actionTracker_Setup_2;
     QAction *actionLoad_Plan;
+    QAction *actionPivot_Calibration;
     QWidget *centralWidget;
     QGridLayout *gridLayout_3;
     QGridLayout *gridlayout;
@@ -71,6 +72,10 @@ public:
         actionTracker_Setup_2->setObjectName(QStringLiteral("actionTracker_Setup_2"));
         actionLoad_Plan = new QAction(vtk_testClass);
         actionLoad_Plan->setObjectName(QStringLiteral("actionLoad_Plan"));
+        actionPivot_Calibration = new QAction(vtk_testClass);
+        actionPivot_Calibration->setObjectName(QStringLiteral("actionPivot_Calibration"));
+        actionPivot_Calibration->setCheckable(false);
+        actionPivot_Calibration->setChecked(false);
         centralWidget = new QWidget(vtk_testClass);
         centralWidget->setObjectName(QStringLiteral("centralWidget"));
         gridLayout_3 = new QGridLayout(centralWidget);
@@ -111,6 +116,7 @@ public:
         menuTracker->addAction(actionTracker_Setup_2);
         mainToolBar->addAction(actionLoad_Plan);
         mainToolBar->addAction(actionCenter_Target);
+        mainToolBar->addAction(actionPivot_Calibration);
 
         retranslateUi(vtk_testClass);
         QObject::connect(actionClose, SIGNAL(triggered()), vtk_testClass, SLOT(close()));
@@ -131,6 +137,7 @@ public:
         actionTracker_Stop->setText(QApplication::translate("vtk_testClass", "Stop", 0));
         actionTracker_Setup_2->setText(QApplication::translate("vtk_testClass", "Setup", 0));
         actionLoad_Plan->setText(QApplication::translate("vtk_testClass", "Load Plan", 0));
+        actionPivot_Calibration->setText(QApplication::translate("vtk_testClass", "Pivot Calibration", 0));
         menuFile->setTitle(QApplication::translate("vtk_testClass", "File", 0));
         menuTracker->setTitle(QApplication::translate("vtk_testClass", "Tracker", 0));
     } // retranslateUi

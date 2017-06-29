@@ -73,6 +73,7 @@
    </attribute>
    <addaction name="actionLoad_Plan"/>
    <addaction name="actionCenter_Target"/>
+   <addaction name="actionPivot_Calibration"/>
   </widget>
   <widget class="QStatusBar" name="statusBar"/>
   <action name="actionClose">
@@ -123,6 +124,17 @@
   <action name="actionLoad_Plan">
    <property name="text">
     <string>Load Plan</string>
+   </property>
+  </action>
+  <action name="actionPivot_Calibration">
+   <property name="checkable">
+    <bool>false</bool>
+   </property>
+   <property name="checked">
+    <bool>false</bool>
+   </property>
+   <property name="text">
+    <string>Pivot Calibration</string>
    </property>
   </action>
  </widget>

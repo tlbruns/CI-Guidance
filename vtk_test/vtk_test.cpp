@@ -1,5 +1,6 @@
 #include "vtk_test.h"
 #include "patient_reg_widget.h"
+#include "Pivot_Calibration.h"
 #include "demo_widget.h"
 
  #include <vtkAutoInit.h>
@@ -145,6 +146,7 @@ vtk_test::vtk_test(QWidget *parent)
     connect(ui.actionTracker_Stop, SIGNAL(triggered()), this, SLOT(slot_Tracker_Stop()));
 	connect(ui.actionRegister_Patient, SIGNAL(triggered()),this, SLOT(slot_Register_Patient()));
     connect(ui.actionLoad_Plan, SIGNAL(triggered()), this, SLOT(slot_Load_Plan()));
+    connect(ui.actionPivot_Calibration, SIGNAL(triggered()), this, SLOT(slot_Pivot_Calibation()));
 	connect(ui.actionTracker_Setup_2, SIGNAL(triggered()), this, SLOT(slot_Tracker_Setup()));
 	connect(ui.actionDemo, SIGNAL(triggered()), this, SLOT(slot_Demo()));
     connect(ui.actionCenter_Target, SIGNAL(triggered()), this, SLOT(slot_CenterTarget()));
@@ -498,13 +500,13 @@ void vtk_test::slot_onGUITimer()
 
     // update fiducial actor positions
     Eigen::Matrix4d T_fiducial; 
-    Eigen::Matrix4d T_fiducial_final;
+    Eigen::Matrix4d T_fiducial_transpose;
     for (int i = 0; i < qMin(numFiducialActors,m_numStrayMarkers); i++) {
         T_fiducial = Eigen::Matrix4d::Identity();
         T_fiducial.block<3, 1>(0, 3) = m_strayMarkers.col(i);
-        T_fiducial = Polaris_sim_trans_inv * T_fiducial * Polaris_sim_trans;
-        T_fiducial_final = T_fiducial.transpose();
-        pvtk_T_fiducials.at(i)->SetMatrix(T_fiducial_final.data());
+        T_fiducial = Polaris_sim_trans_inv * T_fiducial.eval() * Polaris_sim_trans;
+        T_fiducial_transpose = T_fiducial.transpose();
+        pvtk_T_fiducials.at(i)->SetMatrix(T_fiducial_transpose.data());
         m_pActor_fiducials.at(i)->SetUserTransform(pvtk_T_fiducials.at(i));
     }
     
@@ -531,8 +533,8 @@ void vtk_test::slot_onGUITimer()
 		flag_SetTarget = FALSE;
 	}
 
-    //m_pActor_probe->SetVisibility(false); // hide probe
-    //m_pActor_cochlea->SetVisibility(false); // hide cochlea
+    m_pActor_probe->SetVisibility(false); // hide probe
+    m_pActor_cochlea->SetVisibility(false); // hide cochlea
 
 	// update QVTKWidgets
 	m_pQVTK_top->update();
@@ -695,6 +697,16 @@ void vtk_test::slot_Load_Plan()
         planLoaded = true;
         emit sgn_NewFre(0); // signals to infowidget to make live tracking checkbox checkable
     }
+}
+
+void vtk_test::slot_Pivot_Calibation()
+{
+    Pivot_Calibration pivotCalWidget;
+    connect(this, SIGNAL(sgn_NewToolTransform(Matrix4d)), &pivotCalWidget, SLOT(slot_onNewToolTransform(Matrix4d)));
+
+    pivotCalWidget.exec();
+
+    disconnect(this, SIGNAL(sgn_NewToolTransform(Matrix4d)), &pivotCalWidget, SLOT(slot_onNewToolTransform(Matrix4d)));
 }
 
 void vtk_test::slot_Update_Skull(Eigen::Matrix3Xd & markers, int)

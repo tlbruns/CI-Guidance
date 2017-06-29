@@ -56,6 +56,7 @@ protected slots:
 	void slot_CenterView(QString);
 	void slot_CenterTarget();
     void slot_Load_Plan();
+    void slot_Pivot_Calibation();
     void slot_Update_Skull(Eigen::Matrix3Xd &, int);
     void slot_LiveTracking(int);
 	void slot_Register_Patient();
@@ -73,6 +74,7 @@ protected slots:
 signals:
 	void sgn_NewProbePosition(double,double,double);
 	void sgn_NewCIPosition(double,double,double);
+    void sgn_NewToolTransform(Eigen::Matrix4d);
 	void sgn_NewMagPosition(double,double,double);
     void sgn_NewFiducialPositions(Eigen::Matrix3Xd &, int);
     void sgn_NewSkullPosition(double, double, double);

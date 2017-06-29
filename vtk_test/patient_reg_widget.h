@@ -5,6 +5,7 @@
 #include <qvector.h>
 #include "ui_patient_registration.h"
 #include <qtimer.h>
+#include <Eigen/dense>
 #include "PositionAverage.h"
 #include "patient_data.h"
 #include "rigidregistration.h"
