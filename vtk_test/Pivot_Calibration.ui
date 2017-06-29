@@ -343,9 +343,6 @@
   </layout>
   <zorder>groupBox_header</zorder>
   <zorder>buttonBox</zorder>
-  <zorder>formLayoutWidget_2</zorder>
-  <zorder>horizontalLayoutWidget</zorder>
-  <zorder>verticalLayoutWidget_2</zorder>
  </widget>
  <resources/>
  <connections>

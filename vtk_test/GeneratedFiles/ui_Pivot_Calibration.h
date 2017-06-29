@@ -66,7 +66,7 @@ public:
     {
         if (PivotCalibration->objectName().isEmpty())
             PivotCalibration->setObjectName(QStringLiteral("PivotCalibration"));
-        PivotCalibration->resize(507, 577);
+        PivotCalibration->resize(468, 520);
         QSizePolicy sizePolicy(QSizePolicy::Minimum, QSizePolicy::Fixed);
         sizePolicy.setHorizontalStretch(0);
         sizePolicy.setVerticalStretch(0);

@@ -84,7 +84,6 @@ signals:
 	void sgn_WriteData();
 
 private:
-    double tubeOffset; // [mm] Outer tube stickout. AIT pivot-calibration origin is the tube exit from the front plate. 
 	bool isTracking;
     bool planLoaded;
 	int tracker_Port;
@@ -137,8 +136,6 @@ private:
     Eigen::Vector3d  m_colorFiducials;
     Eigen::Vector3d  m_colorStrays;
 
-    Eigen::Matrix4d Polaris_sim_trans; // similarity transform for Polaris Spectra
-    Eigen::Matrix4d Polaris_sim_trans_inv;
     vtkSmartPointer<vtkTransform>   pvtk_T_probe;
     vtkSmartPointer<vtkTransform>   pvtk_T_CItool;
     vtkSmartPointer<vtkTransform>   pvtk_T_CiTarget;
@@ -150,10 +147,9 @@ private:
     quint8             m_numStrayMarkers;
 
 	RotationMatrix		dtRotMatrix;
-	Eigen::Matrix4d		m_CItarget_transform;
-    Eigen::Matrix4d     m_target_transform;
-	Eigen::Matrix4d		m_CItool_transform;
-    Eigen::Matrix4d     m_CItoolOffset_transform; // tip offset from pivot calibration dialog
+    Eigen::Matrix4d     m_T_tracker_target;
+	Eigen::Matrix4d		m_T_tracker_tool;
+    Eigen::Matrix4d     m_T_tool_tip; // tip offset from pivot calibration dialog
 	Eigen::Matrix4d		m_probe_transform;
     Eigen::Matrix4d     m_skull_transform;
 	Eigen::MatrixXd		CI_entry;
