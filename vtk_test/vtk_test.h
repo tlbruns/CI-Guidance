@@ -39,8 +39,8 @@ class vtk_test : public QMainWindow
 public:
 	vtk_test(QWidget *parent = 0);
 	~vtk_test();
-	vtkSmartPointer<vtkActor> LoadOBJFile(QString const& str, double opacity, double color[3]) const;
-	void Initialize();
+    void Initialize();
+    vtkSmartPointer<vtkActor> LoadOBJFile(QString const& str, double opacity, double color[3]) const;
 	vtkSmartPointer<vtkActor> LoadSTLFile(QString const & str, double opacity, double color[3]) const;
 	void SetTransformforCI_target(patient_data *, Eigen::Matrix4d);
 	void SetTransformforCI_target(Eigen::MatrixXd);
@@ -108,7 +108,6 @@ private:
 	int				m_time;
   
     NDIAuroraTracker	*m_tracker;
-    //NDIAuroraTracker	m_tracker;
 
     vtkSmartPointer<vtkRenderer>    m_pRenderer_oblique;
     vtkSmartPointer<vtkRenderer>	m_pRenderer_top;
@@ -155,7 +154,6 @@ private:
 	Eigen::MatrixXd		CI_entry;
 	bool				flag_SetTarget;
 	AlignmentErrors		m_errors;
-	//void Update_err(std::vector<ToolInformationStruct> const& tools);
 	void Update_err();
 	void InitVTK();
 };

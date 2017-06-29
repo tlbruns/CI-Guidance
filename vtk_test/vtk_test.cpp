@@ -278,113 +278,10 @@ void vtk_test::InitVTK()
 
 }
 
-//void vtk_test::InitVTK() {
-//
-//    m_pRenderer_top = vtkSmartPointer<vtkRenderer>::New();  // setup VTK renderer
-//    m_pQVTK_top->setMinimumSize((int)(3 * dpi), (int)(3 * dpi));
-//    m_pQVTK_top->GetRenderWindow()->AddRenderer(m_pRenderer_top);
-//    m_pRenderer_top->SetBackground(0.8, 0.8, 0.8);
-//    m_pRenderer_top->SetGradientBackground(true);
-//
-//    vtkSmartPointer<vtkCamera> camera_top = vtkSmartPointer<vtkCamera>::New();
-//    camera_top->SetPosition(-100, 0, 0); // YZ Plane
-//    camera_top->SetFocalPoint(0, 0, 0);
-//    camera_top->SetViewUp(0, 0, -1);
-//    camera_top->SetClippingRange(-1000, 1000); // based on tracker workspace limits in x
-//    m_pRenderer_top->SetActiveCamera(camera_top);
-//
-//    m_pRenderer_top_inset = vtkSmartPointer<vtkRenderer>::New();
-//    //m_pQVTK_top_inset->setMinimumSize((int)(0.5 * dpi), (int)(0.5 * dpi)); // for lower res displays
-//    m_pQVTK_top_inset->setMinimumSize((int)(1 * dpi), (int)(1 * dpi));
-//    m_pQVTK_top_inset->setMaximumSize((int)(1.5*dpi), (int)(1.5*dpi));
-//    m_pQVTK_top_inset->GetRenderWindow()->AddRenderer(m_pRenderer_top_inset);
-//    m_pRenderer_top_inset->SetBackground(0.8, 0.8, 0.8);
-//    m_pRenderer_top_inset->SetGradientBackground(true);
-//
-//    vtkSmartPointer<vtkCamera> camera_top_inset = vtkSmartPointer<vtkCamera>::New();
-//    int inset_dist = 20;
-//    camera_top_inset->SetPosition(inset_dist, 0, 0); // YZ Plane
-//    camera_top_inset->SetFocalPoint(0, 0, 0);
-//    camera_top_inset->SetViewUp(0, 0, -1);
-//    camera_top_inset->SetClippingRange(-1000, 1000); // based on tracker workspace limits in x
-//    m_pRenderer_top_inset->SetActiveCamera(camera_top_inset);
-//
-//    m_pRenderer_oblique = vtkSmartPointer<vtkRenderer>::New();
-//    m_pQVTK_oblique->setMinimumSize((int)(3 * dpi), (int)(3 * dpi));
-//    m_pQVTK_oblique->GetRenderWindow()->AddRenderer(m_pRenderer_oblique);
-//    m_pRenderer_oblique->SetBackground(0.8, 0.8, 0.8);
-//    m_pRenderer_oblique->SetGradientBackground(true);
-//
-//    vtkSmartPointer<vtkCamera> camera_oblique = vtkSmartPointer<vtkCamera>::New();
-//    camera_oblique->SetPosition(100, 100, 100);
-//    camera_oblique->SetFocalPoint(0, 0, 0);
-//    camera_oblique->SetViewUp(0, 0, -1);
-//    camera_oblique->SetClippingRange(-3000, 3000);
-//    m_pRenderer_oblique->SetActiveCamera(camera_oblique);
-//
-//    m_pRenderer_front = vtkSmartPointer<vtkRenderer>::New();
-//    m_pQVTK_front->setMinimumSize((int)(3 * dpi), (int)(3 * dpi));
-//    m_pQVTK_front->GetRenderWindow()->AddRenderer(m_pRenderer_front);
-//    m_pRenderer_front->SetBackground(0.8, 0.8, 0.8);
-//    m_pRenderer_front->SetGradientBackground(true);
-//
-//    vtkSmartPointer<vtkCamera> camera_front = vtkSmartPointer<vtkCamera>::New();
-//    camera_front->SetPosition(0, 0, 500); // XY Plane
-//    camera_front->SetFocalPoint(0, 0, 0);
-//    camera_front->SetViewUp(-1, 0, 0);
-//    camera_front->SetClippingRange(-3500, 1000); // based on tracker workspace limits in z
-//    m_pRenderer_front->SetActiveCamera(camera_front);
-//
-//    m_pRenderer_front_inset = vtkSmartPointer<vtkRenderer>::New();
-//    //m_pQVTK_front_inset->setMinimumSize((int)(0.5 * dpi), (int)(0.5 * dpi)); // for lower res displays
-//    m_pQVTK_front_inset->setMinimumSize((int)(1 * dpi), (int)(1 * dpi));
-//    m_pQVTK_front_inset->setMaximumSize((int)(1.5*dpi), (int)(1.5*dpi));
-//    m_pQVTK_front_inset->GetRenderWindow()->AddRenderer(m_pRenderer_front_inset);
-//    m_pRenderer_front_inset->SetBackground(0.8, 0.8, 0.8);
-//    m_pRenderer_front_inset->SetGradientBackground(true);
-//
-//    vtkSmartPointer<vtkCamera> camera_front_inset = vtkSmartPointer<vtkCamera>::New();
-//    camera_front_inset->SetPosition(0, 0, inset_dist); // XY Plane
-//    camera_front_inset->SetFocalPoint(0, 0, 0);
-//    camera_front_inset->SetViewUp(-1, 0, 0);
-//    camera_front_inset->SetClippingRange(-3500, 100); // based on tracker workspace limits in z
-//    m_pRenderer_front_inset->SetActiveCamera(camera_front_inset);
-//
-//    m_pRenderer_side = vtkSmartPointer<vtkRenderer>::New();
-//    m_pQVTK_side->setMinimumSize((int)(3 * dpi), (int)(3 * dpi));
-//    m_pQVTK_side->GetRenderWindow()->AddRenderer(m_pRenderer_side);
-//    m_pRenderer_side->SetBackground(0.8, 0.8, 0.8);
-//    m_pRenderer_side->SetGradientBackground(true);
-//
-//    vtkSmartPointer<vtkCamera> camera_side = vtkSmartPointer<vtkCamera>::New();
-//    camera_side->SetPosition(500, 0, 0); // XZ Plane
-//    camera_side->SetFocalPoint(0, 0, 0);
-//    camera_side->SetViewUp(-1, 0, 0);
-//    camera_side->SetClippingRange(-1000, 1000); // based on tracker workspace limits in x
-//    m_pRenderer_side->SetActiveCamera(camera_side);
-//
-//    m_pRenderer_side_inset = vtkSmartPointer<vtkRenderer>::New();
-//    //m_pQVTK_side_inset->setMinimumSize((int)(0.5 * dpi), (int)(0.5 * dpi));
-//    m_pQVTK_side_inset->setMinimumSize((int)(1 * dpi), (int)(1 * dpi));
-//    m_pQVTK_side_inset->setMaximumSize((int)(1.5*dpi), (int)(1.5*dpi));
-//    m_pQVTK_side_inset->GetRenderWindow()->AddRenderer(m_pRenderer_side_inset);
-//    m_pRenderer_side_inset->SetBackground(0.8, 0.8, 0.8);
-//    m_pRenderer_side_inset->SetGradientBackground(true);
-//
-//    vtkSmartPointer<vtkCamera> camera_side_inset = vtkSmartPointer<vtkCamera>::New();
-//    camera_side_inset->SetPosition(inset_dist, 0, 0); // YZ Plane
-//    camera_side_inset->SetFocalPoint(0, 0, 0);
-//    camera_side_inset->SetViewUp(-1, 0, 0);
-//    camera_side_inset->SetClippingRange(-1000, 1000); // based on tracker workspace limits in x
-//    m_pRenderer_side_inset->SetActiveCamera(camera_side_inset);
-//
-//}
-
 void vtk_test::Initialize()
 {
     QString ciToolFilename = QString::fromLocal8Bit("D:\\Trevor\\My Documents\\Code\\VTKtest\\vtk_test\\cad_roms\\AIT_noSplit.obj");
     vtkSmartPointer<vtkActor> pActor_CI_target = LoadOBJFile(ciToolFilename, 0.3, m_colorCiTarget.data());
-    //vtkSmartPointer<vtkActor> pActor_CI_target = LoadSTLFile(ciToolFilename, 0.3, m_colorCiTarget.data());
     m_pRenderer_top->AddActor(pActor_CI_target);
 	m_pRenderer_top_inset->AddActor(pActor_CI_target);
 	m_pRenderer_oblique->AddActor(pActor_CI_target);
@@ -404,7 +301,6 @@ void vtk_test::Initialize()
     m_pRenderer_side_inset->AddActor(m_pActor_guideTubeTarget);
 
     vtkSmartPointer<vtkActor> pActor_CI_tool = LoadOBJFile(ciToolFilename, 1.0, m_colorCiTool.data());
-    //vtkSmartPointer<vtkActor> pActor_CI_tool = LoadSTLFile(ciToolFilename, 1.0, m_colorCiTool.data());
     m_pRenderer_top->AddActor(pActor_CI_tool);
     m_pRenderer_top_inset->AddActor(pActor_CI_tool);
     m_pRenderer_oblique->AddActor(pActor_CI_tool);
@@ -930,22 +826,6 @@ void vtk_test::Update_err()
 	emit sgn_err(m_errors.radial,100);
 	emit sgn_err_ang(m_errors.theta);
 }
-
-//void vtk_test::Update_err(std::vector<ToolInformationStruct> const& tools)
-//{
-//	if (CI_entry.rows() > 0)	// check if value has been set (via registration)
-//	{
-//		double tip_err = sqrt( pow((-tools[2].y - (CI_entry(0,0))),2) + // tracker frame vs tool frame: -y->x, -x->y, -z->z
-//							   pow((-tools[2].x - (CI_entry(0,1))),2) +
-//							   pow((-tools[2].z - (CI_entry(0,2))),2) );
-//		emit sgn_err(tip_err, 100);
-//	}
-//
-//	
-//	//double tip_err = sqrt( pow((-tools[2].y - (PROBE_DESIRED_X)),2) + 
-//	//					   pow((-tools[2].x - (PROBE_DESIRED_Y)),2) +
-//	//					   pow((-tools[2].z - (PROBE_DESIRED_Z)),2) );
-//}
 
 void vtk_test::SetTransformforCI_target(patient_data * ref_patient_data, Eigen::Matrix4d T_tracker_ct)
 {
