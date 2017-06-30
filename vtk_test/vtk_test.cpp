@@ -86,7 +86,7 @@ vtk_test::vtk_test(QWidget *parent)
     m_colorFiducials << 0.81, 0.37, 0.08;
     m_colorStrays    << 0.31, 0.65, 0.79;
 
-    m_T_tool_tip(0, 3) = 50;
+    //m_T_tool_tip(0, 3) = 50;
 
 	// setup info panel on left side
 	InfoWidget *iw = new InfoWidget(this);
@@ -459,13 +459,13 @@ void vtk_test::slot_onGUITimer()
     emit sgn_NewToolTransform(m_T_tracker_tool);
 
     // T_tracker_tip: transform for the tip of the guide tube, in tracker frame
-    Matrix4d T_tracker_tip = m_T_tracker_tool * m_T_tool_tip;
+    m_T_tracker_tip = m_T_tracker_tool * m_T_tool_tip;
 
     // vtktransform is transpose of eigen matrix
     m_probe_transform = T_tracker_probe;
     Matrix4d probe_transpose = m_probe_transform.transpose();
     Matrix4d CItool_transpose = m_T_tracker_tool.transpose();
-    Matrix4d tube_transpose = T_tracker_tip.transpose();
+    Matrix4d tube_transpose = m_T_tracker_tip.transpose();
     Matrix4d liveTarget_transpose = tube_transpose;
 
     pvtk_T_probe->SetMatrix(probe_transpose.data());
@@ -497,9 +497,8 @@ void vtk_test::slot_onGUITimer()
 	if (flag_SetTarget)
 	{
 		// update target actor
-        m_T_tracker_target = m_T_tracker_tool;
-		//m_pActor_CItarget->SetUserTransform(pvtk_T_CItool);
-        m_pActor_CItarget->SetUserTransform(pvtk_T_CiTarget);
+        m_T_tracker_target = m_T_tracker_tip;
+		m_pActor_CItarget->SetUserTransform(vtkT_tracker_tube);
 
 		// recenter view on target
 		slot_CenterView(QString("centerCItarget"));
@@ -521,7 +520,7 @@ void vtk_test::slot_onGUITimer()
 	m_pQVTK_side_inset->update();
 
 	emit sgn_NewProbePosition(m_probe_transform(0,3), m_probe_transform(1, 3), m_probe_transform(2, 3));
-	emit sgn_NewCIPosition(m_T_tracker_tool(0,3), m_T_tracker_tool(1, 3), m_T_tracker_tool(2, 3));
+	emit sgn_NewCIPosition(m_T_tracker_tip(0,3), m_T_tracker_tip(1, 3), m_T_tracker_tip(2, 3));
     emit sgn_NewFiducialPositions(m_strayMarkers, m_numStrayMarkers);
     emit sgn_WriteData();
 	m_frames++;
@@ -777,13 +776,13 @@ void vtk_test::slot_Tracker_Init() {
 
 void vtk_test::Update_err()
 {
-	// transformation between target (t) and insertion tool (i) = Hti
-	Matrix4d Hti = m_T_tracker_target.inverse().eval() * m_T_tracker_tool;
+	// transformation between tip of the AIT and the target, in the tip frame
+    Matrix4d T_tip_target = m_T_tracker_tip.inverse().eval() * m_T_tracker_target;
 
-	// Cartesian error in target frame
-	m_errors.x = Hti(0,3);
-	m_errors.y = Hti(1,3);
-	m_errors.z = Hti(2,3);
+	// Cartesian error in tip frame
+	m_errors.x = T_tip_target(0,3);
+	m_errors.y = T_tip_target(1,3);
+	m_errors.z = T_tip_target(2,3);
 
 	// errors tangential and perpendicular to trajectory axis (xhat)
 	Vector2d radial(m_errors.y, m_errors.z);
@@ -791,9 +790,8 @@ void vtk_test::Update_err()
 	m_errors.axial = m_errors.x;
 
 	// angular error between trajectory axes (x)
-    // y_i = Hti.block<3,1>(0,1);   dot(y_i,[0;1;0]) = y_i(1) = Hti(1,1)
-    // x_i = Hti.block<3,1>(0,0);   dot(x_i,[1;0;0]) = x_i(0) = Hti(0,0)
-    m_errors.theta = acos(Hti(0, 0)); // [rad]
+    // x_i = T_tip_target.block<3,1>(0,0);   dot(x_i,[1;0;0]) = x_i(0) = T_tip_target(0,0)
+    m_errors.theta = acos(T_tip_target(0, 0)); // [rad]
 
 	// Find axis of rotation corresponding to theta
 	// (orthogonal to x_i and x_t)
@@ -804,14 +802,14 @@ void vtk_test::Update_err()
 	}
 	else
 	{
-		axis_theta = Hti.block<3,1>(0,0).cross(Vector3d::UnitX());
+		axis_theta = T_tip_target.block<3,1>(0,0).cross(Vector3d::UnitX());
 		axis_theta.normalize();
 	}
 
 	// Rotate to align x axes and make xy planes coplanar
 	Matrix3d R_theta;
 	R_theta = AngleAxisd(m_errors.theta, axis_theta);
-	Matrix3d R_xalign = R_theta*Hti.block<3, 3>(0, 0);
+	Matrix3d R_xalign = R_theta*T_tip_target.block<3, 3>(0, 0);
 
 	// Find angular error about the x axis
 	// dot product of y column and yhat is just R_xalign(1,1)

@@ -149,6 +149,7 @@ private:
     Eigen::Matrix4d     m_T_tracker_target;
 	Eigen::Matrix4d		m_T_tracker_tool;
     Eigen::Matrix4d     m_T_tool_tip; // tip offset from pivot calibration dialog
+    Eigen::Matrix4d     m_T_tracker_tip;
 	Eigen::Matrix4d		m_probe_transform;
     Eigen::Matrix4d     m_skull_transform;
 	Eigen::MatrixXd		CI_entry;
