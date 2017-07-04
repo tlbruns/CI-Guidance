@@ -16,7 +16,7 @@ public:
     Eigen::Matrix3Xd trajectory() const;
     Eigen::Vector3d target() const;
     Eigen::Vector3d entry() const;
-    double offset() const;
+    Eigen::Vector3d orientation() const;
 
 private:
     QString iniFileName;
@@ -26,6 +26,6 @@ private:
     Eigen::Matrix3Xd m_trajectory;
     Eigen::Vector3d m_target;
     Eigen::Vector3d m_entry;
-    double m_offset;
+    Eigen::Vector3d m_orientation;
 };
 

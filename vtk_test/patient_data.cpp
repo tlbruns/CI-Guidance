@@ -29,13 +29,16 @@ bool patient_data::parse(void)
     m_target << iniFile.value("plan/target/x").toDouble(),
                 iniFile.value("plan/target/y").toDouble(),
                 iniFile.value("plan/target/z").toDouble();
-    m_offset =  iniFile.value("plan/target/offset").toDouble();
 
     m_entry << iniFile.value("plan/entry/x").toDouble(),
                iniFile.value("plan/entry/y").toDouble(),
                iniFile.value("plan/entry/z").toDouble();
 
-    if (m_target.isZero(1e-5) | m_offset == 0 | m_entry.isZero(1e-5)) {
+    m_orientation << iniFile.value("plan/orient/x").toDouble(),
+                     iniFile.value("plan/orient/y").toDouble(),
+                     iniFile.value("plan/orient/z").toDouble();
+
+    if (m_target.isZero(1e-5) | m_orientation.isZero(1e-5) | m_entry.isZero(1e-5)) {
         return false;
     }
 
@@ -94,37 +97,7 @@ Eigen::Vector3d patient_data::entry() const
     return m_entry;
 }
 
-double patient_data::offset() const
+Eigen::Vector3d patient_data::orientation() const
 {
-    return m_offset;
+    return m_orientation;
 }
-
-//Eigen::MatrixXd patient_data::GetPatientData() const
-//{
-//	return m_patientdata;
-//}
-//
-//Eigen::MatrixXd patient_data::GetMarkers() const
-//{
-//	return m_patientdata.block<3,3>(0,0);
-//}
-//
-//Eigen::MatrixXd patient_data::GetTraj() const
-//{
-//	return m_patientdata.block<2,3>(3,0);
-//}
-//
-//Eigen::MatrixXd patient_data::GetTarget() const
-//{
-//	return m_patientdata.row(3);
-//}
-//
-//Eigen::MatrixXd patient_data::GetEntry() const
-//{
-//	return m_patientdata.row(4);
-//}
-//
-//void patient_data::SetPatientData(Eigen::MatrixXd x)
-//{
-//	//m_patientdata = x;
-//}

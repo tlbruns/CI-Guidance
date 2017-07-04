@@ -66,7 +66,7 @@ void Pivot_Calibration::slot_reset()
     ui->label_pivotZ->setText(QString("-0000.00"));
 }
 
-int Pivot_Calibration::computeOffset(void)
+bool Pivot_Calibration::computeOffset(void)
 {
     /*
     Uses the Algebraic Two Step method (Yaniv 2015) to compute 
@@ -87,7 +87,7 @@ int Pivot_Calibration::computeOffset(void)
     int sizet = t_.size();
 
     if (sizeR != sizet) {
-        return -1;
+        return false;
     }
 
     // assemble R_star
@@ -119,4 +119,6 @@ int Pivot_Calibration::computeOffset(void)
     ui->label_pivotX->setText(QString::number(tPivot_(0)));
     ui->label_pivotY->setText(QString::number(tPivot_(1)));
     ui->label_pivotZ->setText(QString::number(tPivot_(2)));
+
+    return true;
 }

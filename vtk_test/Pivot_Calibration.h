@@ -25,7 +25,7 @@ public slots:
     void slot_reset();
 
 private:
-    int computeOffset(void); // 
+    bool computeOffset(void); // 
 
     Eigen::Matrix4d currentT_; // most recent transform received by slot_onNewToolTransform()
     Ui::PivotCalibration *ui;

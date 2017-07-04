@@ -21,14 +21,18 @@ public slots:
 	void slot_CenterView();
     void slot_Checkbox_LiveTracking(int);
     void slot_NewFre(double);
+    void slot_buttonDatalog();
 
 signals:
 	void sgn_CenterView(QString);
     void sgn_LiveTracking(int);
+    void sgn_DatalogStart();
+    void sgn_DatalogStop();
 
 private:
-	Ui::Info	ui;
+	Ui::Info	*ui;
     bool liveTracking;
+    bool loggingData;
 };
 
 #endif // INFOWIDGET_H

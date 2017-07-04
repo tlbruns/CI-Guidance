@@ -164,6 +164,9 @@ CI_Guidance::CI_Guidance(QWidget *parent)
     connect(this, SIGNAL(sgn_NewFre(double)), iw, SLOT(slot_NewFre(double)));
     connect(iw, SIGNAL(sgn_CenterView(QString)), this, SLOT(slot_CenterView(QString)));
     connect(iw, SIGNAL(sgn_LiveTracking(int)), this, SLOT(slot_LiveTracking(int)));
+    connect(iw, SIGNAL(sgn_DatalogStart()), this, SLOT(slot_DatalogStart()));
+    connect(iw, SIGNAL(sgn_DatalogStop()), this, SLOT(slot_DatalogStop()));
+
 
 	//Tracker GUI
 	ui.actionTracker_Stop->setEnabled(false);
@@ -171,7 +174,7 @@ CI_Guidance::CI_Guidance(QWidget *parent)
 	QString trackerText = "Init Port " + QString::number(this->tracker_Port);
 	ui.actionTracker_Init->setText(trackerText);
 
-	//InitiVTK
+	//InitVTK
 	InitVTK();
 }
 
@@ -707,6 +710,9 @@ void CI_Guidance::slot_Load_Plan()
         planLoaded = true;
         emit sgn_NewFre(0); // signals to infowidget to make live tracking checkbox checkable
     }
+    else {
+        planLoaded = false;
+    }
 }
 
 void CI_Guidance::slot_Pivot_Calibation()
@@ -869,15 +875,20 @@ void CI_Guidance::SetTransformforCI_target(patient_data * ref_patient_data, Eige
     */
 
     /* T_ct_target: transformation for the target in the ct frame */
-    // first we need R_ct_target, which rotates the tool axis towards the target
-    // create trajectory vector and calculate axis-angle rotation w.r.t. tool axis (x axis in the default orientation for the CI tool)
-    Eigen::Vector3d trajAxis = ref_patient_data->target() - ref_patient_data->entry(); // vector pointing towards the target
-    Eigen::Vector3d toolAxis(1, 0, 0);
-    Eigen::Vector3d rotAxis = trajAxis.cross(toolAxis); // rotation axis to bring toolAxis to trajAxis
-    rotAxis = rotAxis / rotAxis.norm(); // normalize
-    double angle = acos(trajAxis.dot(toolAxis) / trajAxis.norm()); // angle between toolAxis and trajAxis
-    Eigen::AngleAxisd angleaxis(-angle, rotAxis); // angle is negative since we want to rotate the tool to the trajectory
-    Eigen::Matrix3d R_ct_target = angleaxis.toRotationMatrix();
+    // first we need R_ct_target, which aligns the AIT coordinate frame with the target coordinate frame (in CT space)
+    Vector3d xAxis_target = ref_patient_data->target() - ref_patient_data->entry(); // AIT x-axis corresponds to trajectory axis
+    xAxis_target = xAxis_target / xAxis_target.norm();
+
+    Vector3d zAxis_target = ref_patient_data->orientation(); // AIT z-axis corresponds to electrode orientation
+    zAxis_target = zAxis_target / zAxis_target.norm();
+
+    Vector3d yAxis_target = zAxis_target.cross(xAxis_target); // create y-axis
+    yAxis_target = yAxis_target / yAxis_target.norm();
+
+    Matrix3d R_ct_target;
+    R_ct_target.col(1) = xAxis_target;
+    R_ct_target.col(2) = yAxis_target;
+    R_ct_target.col(3) = zAxis_target;
 
     // assemble T_ct_target
     Eigen::Matrix4d T_ct_target = Eigen::Matrix4d::Identity();
@@ -990,12 +1001,14 @@ void CI_Guidance::slot_Register_Patient()
 {
 	// open file dialog and select patient trajectory plan
     QString fileName = QFileDialog::getOpenFileName(this, "Open Patient Data File", NULL, "CI Plan (*.ini);;All Files (*.*)");
-	//cout << fileName.toLocal8Bit().data() << endl;
 
 	// parse patient data
     m_patientData = new patient_data(fileName);
     if (m_patientData->parse()) {
         planLoaded = true;
+    }
+    else {
+        planLoaded = false;
     }
 
 	Pat_Reg_Widget Pat_Reg_Widget(*m_patientData);
@@ -1008,7 +1021,6 @@ void CI_Guidance::slot_Register_Patient()
     disconnect(this, SIGNAL(sgn_NewProbePosition(double, double, double)), &Pat_Reg_Widget, SLOT(slot_onNewProbePosition(double, double, double)));
     disconnect(this, SIGNAL(sgn_NewFiducialPositions(Eigen::Matrix3Xd &, int)), &Pat_Reg_Widget, SLOT(slot_onNewFiducialPositions(Eigen::Matrix3Xd &, int)));
 
-	cout << reg.GetTransform() << endl;
 	SetTransformforCI_target(m_patientData, reg.GetTransform());
 }
 
