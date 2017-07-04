@@ -38,15 +38,6 @@
     <ClCompile Include="main.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="vtk_test.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="GeneratedFiles\Debug\moc_vtk_test.cpp">
-      <Filter>Generated Files\Debug</Filter>
-    </ClCompile>
-    <ClCompile Include="GeneratedFiles\Release\moc_vtk_test.cpp">
-      <Filter>Generated Files\Release</Filter>
-    </ClCompile>
     <ClCompile Include="GeneratedFiles\qrc_vtk_test.cpp">
       <Filter>Generated Files</Filter>
     </ClCompile>
@@ -131,14 +122,17 @@
     <ClCompile Include="GeneratedFiles\Release\moc_Pivot_Calibration.cpp">
       <Filter>Generated Files\Release</Filter>
     </ClCompile>
+    <ClCompile Include="CI_Guidance.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="GeneratedFiles\Debug\moc_CI_Guidance.cpp">
+      <Filter>Generated Files\Debug</Filter>
+    </ClCompile>
+    <ClCompile Include="GeneratedFiles\Release\moc_CI_Guidance.cpp">
+      <Filter>Generated Files\Release</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
-    <CustomBuild Include="vtk_test.h">
-      <Filter>Header Files</Filter>
-    </CustomBuild>
-    <CustomBuild Include="vtk_test.ui">
-      <Filter>Form Files</Filter>
-    </CustomBuild>
     <CustomBuild Include="vtk_test.qrc">
       <Filter>Resource Files</Filter>
     </CustomBuild>
@@ -175,11 +169,14 @@
     <CustomBuild Include="Pivot_Calibration.h">
       <Filter>Header Files</Filter>
     </CustomBuild>
+    <CustomBuild Include="CI_Guidance.h">
+      <Filter>Header Files</Filter>
+    </CustomBuild>
+    <CustomBuild Include="CI_Guidance.ui">
+      <Filter>Form Files</Filter>
+    </CustomBuild>
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="GeneratedFiles\ui_vtk_test.h">
-      <Filter>Generated Files</Filter>
-    </ClInclude>
     <ClInclude Include="APIStructures.h">
       <Filter>Header Files</Filter>
     </ClInclude>
@@ -223,6 +220,9 @@
       <Filter>Generated Files</Filter>
     </ClInclude>
     <ClInclude Include="GeneratedFiles\ui_Pivot_Calibration.h">
+      <Filter>Generated Files</Filter>
+    </ClInclude>
+    <ClInclude Include="GeneratedFiles\ui_CI_Guidance.h">
       <Filter>Generated Files</Filter>
     </ClInclude>
   </ItemGroup>

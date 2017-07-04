@@ -1,4 +1,4 @@
-#include "vtk_test.h"
+#include "CI_Guidance.h"
 #include <QtWidgets/QApplication>
 #include <QVTKWidget.h>
 #include <qmetatype.h>
@@ -12,7 +12,7 @@ int main(int argc, char *argv[])
 	qRegisterMetaType<Eigen::MatrixXd>(&A);
 
 	QApplication a(argc, argv);
-	vtk_test w;
+	CI_Guidance w;
 	w.Initialize();
 	w.show();
 

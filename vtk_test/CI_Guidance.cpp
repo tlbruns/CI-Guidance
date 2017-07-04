@@ -1,4 +1,4 @@
-#include "vtk_test.h"
+#include "CI_Guidance.h"
 #include "patient_reg_widget.h"
 #include "Pivot_Calibration.h"
 #include "demo_widget.h"
@@ -12,6 +12,7 @@
 #include <qscreen.h>
 #include <QVTKWidget.h>
 #include <qvector.h>
+#include <vector>
 #include <qfiledialog.h>
 #include <qfile.h>
 #include <qdatetime.h>
@@ -51,19 +52,19 @@
 #define	 PROBE_DESIRED_Z		1451.95
 #define  SIMULATE_ERROR			0.9		// Error to use when simulating
 
+const static int TRACKER_UPDATE_INTERVAL = 30; // [ms]
+const static int FRAME_RATE_UPDATE_INTERVAL = 1000; // [ms]
+const static int NUM_TRACKED_TOOLS = 2; // which tools depends on the order in the .ini file (first N tools)
 
- const static int FRAME_RATE_UPDATE_INTERVAL = 1000; //integer [ms]
- const static int NUM_TRACKED_TOOLS = 2; // which tools depends on the order in the .ini file (first N tools)
+using namespace Eigen;
 
- using namespace Eigen;
-
-vtk_test::vtk_test(QWidget *parent)
+CI_Guidance::CI_Guidance(QWidget *parent)
 	: QMainWindow(parent),
 	m_time(0),
 	m_frames(0),
     numFiducialActors(15),
 	flag_SetTarget(FALSE),
-    m_T_tracker_tool(Matrix4d::Identity()),
+    m_T_tracker_Ait(Matrix4d::Identity()),
     m_T_tool_tip(Matrix4d::Identity()),
 	m_probe_transform(Matrix4d::Identity())
 {
@@ -71,7 +72,6 @@ vtk_test::vtk_test(QWidget *parent)
 	pDatalogFile = NULL;
 	pTrackerSetup = NULL;
 	m_tracker = NULL;
-    m_strayMarkers.resize(3, NO_STRAYMARKERS);
 
 	isTracking = false;
     planLoaded = false;
@@ -81,7 +81,7 @@ vtk_test::vtk_test(QWidget *parent)
 
     m_colorCiTool    << 0.3, 1.0, 0.3;
     m_colorCiTarget  << 0.8, 0.3, 0.3;
-    m_colorCochlea << 0.75, 0.04, 0.84;
+    m_colorCochlea   << 0.75, 0.04, 0.84;
     m_colorProbe     << 0.3, 0.3, 1.0;
     m_colorFiducials << 0.81, 0.37, 0.08;
     m_colorStrays    << 0.31, 0.65, 0.79;
@@ -123,10 +123,13 @@ vtk_test::vtk_test(QWidget *parent)
 	ui.gridlayout->addWidget(m_pQVTK_side_inset, 1, 2, 1, 1, Qt::AlignBottom | Qt::AlignRight);
 
 	// setup timers
-	m_timerGui.setInterval(0);
-	m_timerGui.setSingleShot(false);
-	connect(&m_timerGui, SIGNAL(timeout()), this, SLOT(slot_onGUITimer()));
-	//m_timer.start();
+    m_trackerTimer.setInterval(TRACKER_UPDATE_INTERVAL);
+    m_trackerTimer.setSingleShot(false);
+    connect(&m_trackerTimer, SIGNAL(timeout()), this, SLOT(slot_refreshTracker()));
+
+	m_guiTimer.setInterval(0);
+	m_guiTimer.setSingleShot(false);
+	connect(&m_guiTimer, SIGNAL(timeout()), this, SLOT(slot_onGUITimer()));
 
 	m_frameRateTimer.setInterval(FRAME_RATE_UPDATE_INTERVAL);
 	m_frameRateTimer.setSingleShot(false);
@@ -143,6 +146,16 @@ vtk_test::vtk_test(QWidget *parent)
 	connect(ui.actionTracker_Setup_2, SIGNAL(triggered()), this, SLOT(slot_Tracker_Setup()));
 	connect(ui.actionDemo, SIGNAL(triggered()), this, SLOT(slot_Demo()));
     connect(ui.actionCenter_Target, SIGNAL(triggered()), this, SLOT(slot_CenterTarget()));
+
+    connect(this, SIGNAL(sgn_NewProbeTransform(Matrix4d)), this, SLOT(slot_updateActorProbe(Matrix4d)));
+    connect(this, SIGNAL(sgn_NewAitTransform(Matrix4d)), this, SLOT(slot_updateActorAit(Matrix4d)));
+    connect(this, SIGNAL(sgn_NewAitTargetTransform(Matrix4d)), this, SLOT(slot_updateActorAitTarget(Matrix4d)));
+    connect(this, SIGNAL(sgn_NewTubeTransform(Matrix4d)), this, SLOT(slot_updateActorTube(Matrix4d)));
+    connect(this, SIGNAL(sgn_NewTubeTargetTransform(Matrix4d)), this, SLOT(slot_updateActorTubeTarget(Matrix4d)));
+    connect(this, SIGNAL(sgn_NewFiducialPositions(Matrix3Xd, quint8)), this, SLOT(slot_updateActorFiducials(Matrix3Xd, quint8)));
+    connect(this, SIGNAL(sgn_NewCtTransform(Matrix4d)), this, SLOT(slot_updateActorCochlea(Matrix4d)));
+
+
 	connect(this, SIGNAL(sgn_NewProbePosition(double,double,double)), iw, SLOT(slot_NewProbePosition(double,double,double)));
 	connect(this, SIGNAL(sgn_NewCIPosition(double,double,double)), iw, SLOT(slot_NewCIPosition(double,double,double)));
 	connect(this, SIGNAL(sgn_NewMagPosition(double,double,double)), iw, SLOT(slot_NewMagPosition(double,double,double)));
@@ -162,7 +175,7 @@ vtk_test::vtk_test(QWidget *parent)
 	InitVTK();
 }
 
-vtk_test::~vtk_test()
+CI_Guidance::~CI_Guidance()
 {
 	// stop tracker
 	if (isTracking)
@@ -176,7 +189,7 @@ vtk_test::~vtk_test()
 	}
 }
 
-void vtk_test::InitVTK() 
+void CI_Guidance::InitVTK() 
 {
 	m_pRenderer_top = vtkSmartPointer<vtkRenderer>::New();  // setup VTK renderer
 	m_pQVTK_top->setMinimumSize((int)(3 * dpi), (int)(3 * dpi));
@@ -278,19 +291,22 @@ void vtk_test::InitVTK()
 
 }
 
-void vtk_test::Initialize()
+void CI_Guidance::Initialize()
 {
-    QString ciToolFilename = QString::fromLocal8Bit("D:\\Trevor\\My Documents\\Code\\VTKtest\\vtk_test\\cad_roms\\AIT_noSplit.obj");
-    vtkSmartPointer<vtkActor> pActor_CI_target = LoadOBJFile(ciToolFilename, 0.3, m_colorCiTarget.data());
-    m_pRenderer_top->AddActor(pActor_CI_target);
-	m_pRenderer_top_inset->AddActor(pActor_CI_target);
-	m_pRenderer_oblique->AddActor(pActor_CI_target);
-	m_pRenderer_front->AddActor(pActor_CI_target);
-	m_pRenderer_front_inset->AddActor(pActor_CI_target);
-	m_pRenderer_side->AddActor(pActor_CI_target);
-	m_pRenderer_side_inset->AddActor(pActor_CI_target);
-
+    QString AitFilename = QString::fromLocal8Bit("D:\\Trevor\\My Documents\\Code\\VTKtest\\vtk_test\\cad_roms\\AIT_noSplit.obj");
     QString guideTubeFilename = QString::fromLocal8Bit("D:\\Trevor\\My Documents\\Code\\VTKtest\\vtk_test\\cad_roms\\Hypo_Tube_18XT_MedElFlex.obj");
+    QString probeFilename = QString::fromLocal8Bit("D:\\Trevor\\My Documents\\Code\\VTKtest\\vtk_test\\x64\\Release\\polaris_probe.obj");
+    QString cochleaFilename = QString::fromLocal8Bit("D:\\Trevor\\My Documents\\MED lab\\Cochlear R01\\Code\\Magnetic Steering\\ImageData\\MagSteeringTest01\\structures_LPS\\MagSteeringTest01_Cochlea.stl");
+
+    m_pActor_AitTarget = LoadOBJFile(AitFilename, 0.3, m_colorCiTarget.data());
+    m_pRenderer_top->AddActor(m_pActor_AitTarget);
+	m_pRenderer_top_inset->AddActor(m_pActor_AitTarget);
+	m_pRenderer_oblique->AddActor(m_pActor_AitTarget);
+	m_pRenderer_front->AddActor(m_pActor_AitTarget);
+	m_pRenderer_front_inset->AddActor(m_pActor_AitTarget);
+	m_pRenderer_side->AddActor(m_pActor_AitTarget);
+	m_pRenderer_side_inset->AddActor(m_pActor_AitTarget);
+
     m_pActor_guideTubeTarget = LoadOBJFile(guideTubeFilename, 1.0, m_colorCiTarget.data());
     m_pRenderer_top->AddActor(m_pActor_guideTubeTarget);
     m_pRenderer_top_inset->AddActor(m_pActor_guideTubeTarget);
@@ -300,14 +316,14 @@ void vtk_test::Initialize()
     m_pRenderer_side->AddActor(m_pActor_guideTubeTarget);
     m_pRenderer_side_inset->AddActor(m_pActor_guideTubeTarget);
 
-    vtkSmartPointer<vtkActor> pActor_CI_tool = LoadOBJFile(ciToolFilename, 1.0, m_colorCiTool.data());
-    m_pRenderer_top->AddActor(pActor_CI_tool);
-    m_pRenderer_top_inset->AddActor(pActor_CI_tool);
-    m_pRenderer_oblique->AddActor(pActor_CI_tool);
-    m_pRenderer_front->AddActor(pActor_CI_tool);
-    m_pRenderer_front_inset->AddActor(pActor_CI_tool);
-    m_pRenderer_side->AddActor(pActor_CI_tool);
-    m_pRenderer_side_inset->AddActor(pActor_CI_tool);
+    m_pActor_Ait = LoadOBJFile(AitFilename, 1.0, m_colorCiTool.data());
+    m_pRenderer_top->AddActor(m_pActor_Ait);
+    m_pRenderer_top_inset->AddActor(m_pActor_Ait);
+    m_pRenderer_oblique->AddActor(m_pActor_Ait);
+    m_pRenderer_front->AddActor(m_pActor_Ait);
+    m_pRenderer_front_inset->AddActor(m_pActor_Ait);
+    m_pRenderer_side->AddActor(m_pActor_Ait);
+    m_pRenderer_side_inset->AddActor(m_pActor_Ait);
 
     m_pActor_guideTube = LoadOBJFile(guideTubeFilename, 1.0, m_colorCiTool.data());
     m_pRenderer_top->AddActor(m_pActor_guideTube);
@@ -318,18 +334,18 @@ void vtk_test::Initialize()
     m_pRenderer_side->AddActor(m_pActor_guideTube);
     m_pRenderer_side_inset->AddActor(m_pActor_guideTube);
 
-	vtkSmartPointer<vtkActor> pActor_probe = LoadOBJFile(QString::fromLocal8Bit("D:\\Trevor\\My Documents\\Code\\VTKtest\\vtk_test\\x64\\Release\\polaris_probe.obj"), 1.0, m_colorProbe.data());
-	m_pRenderer_top->AddActor(pActor_probe);
-	m_pRenderer_oblique->AddActor(pActor_probe);
-	m_pRenderer_front->AddActor(pActor_probe);
-	m_pRenderer_side->AddActor(pActor_probe);
+	m_pActor_probe = LoadOBJFile(probeFilename, 1.0, m_colorProbe.data());
+	m_pRenderer_top->AddActor(m_pActor_probe);
+	m_pRenderer_oblique->AddActor(m_pActor_probe);
+	m_pRenderer_front->AddActor(m_pActor_probe);
+	m_pRenderer_side->AddActor(m_pActor_probe);
 
-    m_pActor_cochlea = LoadSTLFile(QString::fromLocal8Bit("D:\\Trevor\\My Documents\\MED lab\\Cochlear R01\\Code\\Magnetic Steering\\ImageData\\MagSteeringTest01\\structures_LPS\\MagSteeringTest01_Cochlea.stl"), 1.0, m_colorCochlea.data());
+    m_pActor_cochlea = LoadSTLFile(cochleaFilename, 1.0, m_colorCochlea.data());
     m_pRenderer_top->AddActor(m_pActor_cochlea);
     m_pRenderer_top_inset->AddActor(m_pActor_cochlea);
     m_pRenderer_oblique->AddActor(m_pActor_cochlea);
     m_pRenderer_front->AddActor(m_pActor_cochlea);
-    m_pRenderer_front_inset->AddActor(m_pActor_CItarget);
+    m_pRenderer_front_inset->AddActor(m_pActor_AitTarget);
     m_pRenderer_side->AddActor(m_pActor_cochlea);
     m_pRenderer_side_inset->AddActor(m_pActor_cochlea);
 
@@ -387,129 +403,16 @@ void vtk_test::Initialize()
         pvtk_T_fiducials.push_back(transform);
     }
     
-    pvtk_T_probe = vtkSmartPointer<vtkTransform>::New();
-    pvtk_T_CItool = vtkSmartPointer<vtkTransform>::New();
-    pvtk_T_CiTarget = vtkSmartPointer<vtkTransform>::New();
-    pvtk_T_target_current = vtkSmartPointer<vtkTransform>::New();
-    pvtk_T_target_desired = vtkSmartPointer<vtkTransform>::New();
-	m_pActor_CItarget = pActor_CI_target;
-	m_pActor_CItool = pActor_CI_tool;
-	m_pActor_probe = pActor_probe;
-    //m_pActor_cochlea = pActor_cochlea;
+    pvtk_T_tracker_probe = vtkSmartPointer<vtkTransform>::New();
+    pvtk_T_tracker_ait = vtkSmartPointer<vtkTransform>::New();
+    pvtk_T_tracker_AitTarget = vtkSmartPointer<vtkTransform>::New();
+    pvtk_T_tracker_tube = vtkSmartPointer<vtkTransform>::New();
 
 	slot_CenterView(QString("centerCItool"));
 }
 
-void vtk_test::slot_onGUITimer()
+void CI_Guidance::slot_onGUITimer()
 {
-	// declare variables	
-    QVector< Eigen::Quaterniond > quat_Polaris;
-    QVector< Eigen::Vector3d > p;
-    QVector< Eigen::Matrix3d> R;
-    QVector< Eigen::Matrix4d > T_tracker_tool;
-
-	quat_Polaris.resize(NUM_TRACKED_TOOLS + 1);
-	p.resize(NUM_TRACKED_TOOLS + 1);
-	R.resize(NUM_TRACKED_TOOLS + 1);
-    T_tracker_tool.resize(NUM_TRACKED_TOOLS + 1);
-    
-    std::vector<ToolInformationStruct> tools = m_tracker->GetTransformationsAndStrays();
-
-	if (TRACKER_SIMULATE) {
-		quat_Polaris[1] = Eigen::Quaterniond(1, 0, 0, 0);
-		quat_Polaris[2] = Eigen::Quaterniond(AngleAxisd(3.14159265358979323846 / 12.0, Vector3d::UnitZ()));
-		p[1] = Vector3d(-20,-100,-15);
-		p[2] = Vector3d(-2, 0.5, 0.2);
-        m_T_tracker_target = Matrix4d::Identity();
-		vtkSmartPointer<vtkTransform> pvtk_T_CItarget = vtkSmartPointer<vtkTransform>::New();
-		pvtk_T_CItarget->Identity();
-		m_pActor_CItarget->SetUserTransform(pvtk_T_CItarget);
-	}
-	else {
-        // tool transformations
-		for (int toolnum = 1; toolnum <= NUM_TRACKED_TOOLS; toolnum++) {
-			quat_Polaris[toolnum] = Eigen::Quaterniond(tools[toolnum].q0, tools[toolnum].qx, tools[toolnum].qy, tools[toolnum].qz);
-			p[toolnum](0) = tools[toolnum].x;
-			p[toolnum](1) = tools[toolnum].y;
-			p[toolnum](2) = tools[toolnum].z;
-		}
-
-        // stray markers positions
-        Position3dStruct strayMarkersTemp[NO_STRAYMARKERS];
-        m_numStrayMarkers = m_tracker->GetStrayMarkers(*strayMarkersTemp);
-        m_strayMarkers.setZero(); // clear out old values
-        for (qint32 i = 0; i < m_numStrayMarkers; ++i)
-        {
-            m_strayMarkers.col(i) << strayMarkersTemp[i].x,
-                                     strayMarkersTemp[i].y,
-                                     strayMarkersTemp[i].z;
-        }
-	}
-
-	// convert quaternion to rotation matrix and combine with translation into a transformation matrix
-	for (int toolnum = 1; toolnum <= NUM_TRACKED_TOOLS; toolnum++) {
-		R[toolnum] = quat_Polaris[toolnum].toRotationMatrix();
-		T_tracker_tool[toolnum] = Eigen::Matrix4d::Identity();
-		T_tracker_tool[toolnum].block<3, 3>(0, 0) = R[toolnum];
-        T_tracker_tool[toolnum].block<3, 1>(0, 3) = p[toolnum];
-	}
-
-    Matrix4d T_tracker_probe  = T_tracker_tool[1]; // probe transform in tracker frame
-    m_T_tracker_tool = T_tracker_tool[2]; // insertion tool transform in tracker frame
-    emit sgn_NewToolTransform(m_T_tracker_tool);
-
-    // T_tracker_tip: transform for the tip of the guide tube, in tracker frame
-    m_T_tracker_tip = m_T_tracker_tool * m_T_tool_tip;
-
-    // vtktransform is transpose of eigen matrix
-    m_probe_transform = T_tracker_probe;
-    Matrix4d probe_transpose = m_probe_transform.transpose();
-    Matrix4d CItool_transpose = m_T_tracker_tool.transpose();
-    Matrix4d tube_transpose = m_T_tracker_tip.transpose();
-    Matrix4d liveTarget_transpose = tube_transpose;
-
-    pvtk_T_probe->SetMatrix(probe_transpose.data());
-    pvtk_T_CItool->SetMatrix(CItool_transpose.data());
-    pvtk_T_target_current->SetMatrix(liveTarget_transpose.data());
-    vtkSmartPointer<vtkTransform>   vtkT_tracker_tube = vtkSmartPointer<vtkTransform>::New();
-    vtkT_tracker_tube->SetMatrix(tube_transpose.data());
-
-    // update fiducial actor positions
-    Eigen::Matrix4d T_fiducial; 
-    Eigen::Matrix4d T_fiducial_transpose;
-    for (int i = 0; i < qMin(numFiducialActors,m_numStrayMarkers); i++) {
-        T_fiducial = Eigen::Matrix4d::Identity();
-        T_fiducial.block<3, 1>(0, 3) = m_strayMarkers.col(i);
-        T_fiducial_transpose = T_fiducial.transpose();
-        pvtk_T_fiducials.at(i)->SetMatrix(T_fiducial_transpose.data());
-        m_pActor_fiducials.at(i)->SetUserTransform(pvtk_T_fiducials.at(i));
-    }
-    
-    // Update actors with new transforms
-	m_pActor_probe->SetUserTransform(pvtk_T_probe);
-	m_pActor_CItool->SetUserTransform(pvtk_T_CItool);
-    m_pActor_target_current->SetUserTransform(pvtk_T_target_current);
-    m_pActor_guideTube->SetUserTransform(vtkT_tracker_tube);
-
-	// Update alignment error
-	Update_err();
-
-	if (flag_SetTarget)
-	{
-		// update target actor
-        m_T_tracker_target = m_T_tracker_tip;
-		m_pActor_CItarget->SetUserTransform(vtkT_tracker_tube);
-
-		// recenter view on target
-		slot_CenterView(QString("centerCItarget"));
-
-		// reset flag
-		flag_SetTarget = FALSE;
-	}
-
-    m_pActor_probe->SetVisibility(false); // hide probe
-    m_pActor_cochlea->SetVisibility(false); // hide cochlea
-
 	// update QVTKWidgets
 	m_pQVTK_top->update();
 	m_pQVTK_top_inset->update();
@@ -519,32 +422,170 @@ void vtk_test::slot_onGUITimer()
 	m_pQVTK_side->update();
 	m_pQVTK_side_inset->update();
 
-	emit sgn_NewProbePosition(m_probe_transform(0,3), m_probe_transform(1, 3), m_probe_transform(2, 3));
-	emit sgn_NewCIPosition(m_T_tracker_tip(0,3), m_T_tracker_tip(1, 3), m_T_tracker_tip(2, 3));
-    emit sgn_NewFiducialPositions(m_strayMarkers, m_numStrayMarkers);
-    emit sgn_WriteData();
 	m_frames++;
 }
 
-void vtk_test::resizeEvent(QResizeEvent *event)
+void CI_Guidance::slot_refreshTracker(void)
+{
+    QVector<Eigen::Quaterniond> quat_Polaris;
+    QVector<Eigen::Vector3d> p;
+    QVector<Eigen::Matrix3d> R;
+    QVector<Eigen::Matrix4d> T_tracker_tools;
+
+    quat_Polaris.resize(NUM_TRACKED_TOOLS + 1); // 0 index not used in order to match with list in tracker.ini 
+    p.resize(NUM_TRACKED_TOOLS + 1);
+    R.resize(NUM_TRACKED_TOOLS + 1);
+    T_tracker_tools.resize(NUM_TRACKED_TOOLS + 1);
+
+    // query tracker
+    std::vector<ToolInformationStruct> tools = m_tracker->GetTransformationsAndStrays();
+
+    // tool transformations
+    for (int toolnum = 1; toolnum <= NUM_TRACKED_TOOLS; toolnum++) {
+        quat_Polaris[toolnum] = Eigen::Quaterniond(tools[toolnum].q0, tools[toolnum].qx, tools[toolnum].qy, tools[toolnum].qz);
+        p[toolnum](0) = tools[toolnum].x;
+        p[toolnum](1) = tools[toolnum].y;
+        p[toolnum](2) = tools[toolnum].z;
+    }
+
+    // convert quaternion to rotation matrix and combine with translation into a transformation matrix
+    for (int toolnum = 1; toolnum <= NUM_TRACKED_TOOLS; toolnum++) {
+        R[toolnum] = quat_Polaris[toolnum].toRotationMatrix();
+        T_tracker_tools[toolnum] = Eigen::Matrix4d::Identity();
+        T_tracker_tools[toolnum].block<3, 3>(0, 0) = R[toolnum];
+        T_tracker_tools[toolnum].block<3, 1>(0, 3) = p[toolnum];
+    }
+
+    // probe transform in tracker frame
+    Matrix4d T_tracker_probe = T_tracker_tools[1];
+    emit sgn_NewProbeTransform(T_tracker_probe);
+
+    // automated insertion tool transform in tracker frame
+    Matrix4d T_tracker_Ait   = T_tracker_tools[2]; 
+    m_T_tracker_Ait = T_tracker_Ait;
+    emit sgn_NewAitTransform(T_tracker_Ait);
+
+    // T_tracker_tip: transform for the tip of the guide tube, in tracker frame
+    Matrix4d T_tracker_tip = T_tracker_Ait * m_T_tool_tip;
+    m_T_tracker_tip = T_tracker_tip;
+    emit sgn_NewTubeTransform(T_tracker_tip);
+
+    // stray markers positions
+    Position3dStruct strayMarkersTemp[NO_STRAYMARKERS];
+    quint8 numStrayMarkers = m_tracker->GetStrayMarkers(*strayMarkersTemp);
+    if (numStrayMarkers > 0) {
+        Eigen::Matrix3Xd strayMarkers(3, numStrayMarkers);
+        for (qint32 i = 0; i < numStrayMarkers; ++i)
+        {
+            strayMarkers.col(i) << strayMarkersTemp[i].x,
+                                   strayMarkersTemp[i].y,
+                                   strayMarkersTemp[i].z;
+        }
+
+        emit sgn_NewFiducialPositions(strayMarkers, numStrayMarkers);
+    }
+
+
+    // Update alignment error
+    Update_err();
+
+    if (flag_SetTarget)
+    {
+        // update target actors
+        m_T_tracker_target = m_T_tracker_tip;
+        m_pActor_guideTubeTarget->SetUserTransform(pvtk_T_tracker_tubeTarget);
+        m_pActor_AitTarget->SetUserTransform(pvtk_T_tracker_AitTarget);
+
+        // recenter view on target
+        slot_CenterView(QString("centerCItarget"));
+
+        // reset flag
+        flag_SetTarget = FALSE;
+    }
+
+    emit sgn_NewProbePosition(m_probe_transform(0, 3), m_probe_transform(1, 3), m_probe_transform(2, 3));
+    emit sgn_NewCIPosition(m_T_tracker_tip(0, 3), m_T_tracker_tip(1, 3), m_T_tracker_tip(2, 3));
+    
+    emit sgn_WriteData();
+}
+
+void CI_Guidance::slot_updateActorAit(Matrix4d T_tracker_Ait)
+{
+    T_tracker_Ait.transposeInPlace();
+    pvtk_T_tracker_ait->SetMatrix(T_tracker_Ait.data());
+    m_pActor_Ait->SetUserTransform(pvtk_T_tracker_ait);
+}
+
+void CI_Guidance::slot_updateActorAitTarget(Matrix4d T_tracker_AitTarget)
+{
+    T_tracker_AitTarget.transposeInPlace();
+    pvtk_T_tracker_AitTarget->SetMatrix(T_tracker_AitTarget.data());
+    m_pActor_AitTarget->SetUserTransform(pvtk_T_tracker_AitTarget);
+}
+
+void CI_Guidance::slot_updateActorTube(Matrix4d T_tracker_tube)
+{
+    T_tracker_tube.transposeInPlace();
+    pvtk_T_tracker_tube->SetMatrix(T_tracker_tube.data());
+
+    m_pActor_guideTube->SetUserTransform(pvtk_T_tracker_tube);
+    m_pActor_target_current->SetUserTransform(pvtk_T_tracker_tube); // target sphere is always at tip of guide tube
+}
+
+void CI_Guidance::slot_updateActorTubeTarget(Matrix4d T_tracker_tubeTarget)
+{
+    T_tracker_tubeTarget.transposeInPlace();
+    pvtk_T_tracker_tubeTarget->SetMatrix(T_tracker_tubeTarget.data());
+
+    m_pActor_guideTubeTarget->SetUserTransform(pvtk_T_tracker_tubeTarget);
+    m_pActor_target_desired->SetUserTransform(pvtk_T_tracker_tubeTarget); // target sphere is always at tip of guide tube
+}
+
+void CI_Guidance::slot_updateActorProbe(Matrix4d T_tracker_probe)
+{
+    T_tracker_probe.transposeInPlace();
+    pvtk_T_tracker_probe->SetMatrix(T_tracker_probe.data());
+    m_pActor_probe->SetUserTransform(pvtk_T_tracker_probe);
+}
+
+void CI_Guidance::slot_updateActorCochlea(Matrix4d T_tracker_ct)
+{
+    T_tracker_ct.transposeInPlace();
+    pvtk_T_tracker_ct->SetMatrix(T_tracker_ct.data());
+    m_pActor_cochlea->SetUserTransform(pvtk_T_tracker_ct);
+}
+
+void CI_Guidance::slot_updateActorFiducials(Eigen::Matrix3Xd fiducials, quint8 numFiducials)
+{
+    // update fiducial actor positions
+    for (int i = 0; i < qMin(numFiducialActors, numFiducials); i++) {
+        Matrix4d T_fiducial = Eigen::Matrix4d::Identity();
+        T_fiducial.block<3, 1>(0, 3) = fiducials.col(i);
+        T_fiducial.transposeInPlace();
+        pvtk_T_fiducials.at(i)->SetMatrix(T_fiducial.data());
+        m_pActor_fiducials.at(i)->SetUserTransform(pvtk_T_fiducials.at(i));
+    }
+}
+
+void CI_Guidance::resizeEvent(QResizeEvent *event)
 {
 	QWidget::resizeEvent(event);
 	m_frameRateLabel.setGeometry( m_pQVTK_top->geometry() );
 }
 
-void vtk_test::slot_onFrameRateTimer()
+void CI_Guidance::slot_onFrameRateTimer()
 {
 	double rate = (double)m_frames*1000.0 / (double)FRAME_RATE_UPDATE_INTERVAL;
 	m_frameRateLabel.setText( QString::number((int)rate).rightJustified(4,' ',false) );
 	m_frames = 0;
 }
 
-void vtk_test::slot_onRegistration(Eigen::MatrixXd T)
+void CI_Guidance::slot_onRegistration(Eigen::MatrixXd T)
 {
 	std::cout << T << std::endl;
 }
 
-void vtk_test::slot_CenterView(QString senderObjName)
+void CI_Guidance::slot_CenterView(QString senderObjName)
 {
 	double cam_offset = 30; // distance to offset camera from focal point
     double inset_offset = 15;
@@ -561,24 +602,24 @@ void vtk_test::slot_CenterView(QString senderObjName)
 	// determine sender
 	if (senderObjName == "centerCItool")
 	{
-		double toolx = m_T_tracker_tool(0,3);
-		double tooly = m_T_tracker_tool(1,3);
-		double toolz = m_T_tracker_tool(2,3);
+		double toolx = m_T_tracker_Ait(0,3);
+		double tooly = m_T_tracker_Ait(1,3);
+		double toolz = m_T_tracker_Ait(2,3);
 
 		m_pRenderer_top->GetActiveCamera()->SetPosition(toolx - cam_offset, tooly, toolz);
 		m_pRenderer_top->GetActiveCamera()->SetFocalPoint(toolx, tooly, toolz);
-		m_pRenderer_top->ResetCamera(m_pActor_CItool->GetBounds());
+		m_pRenderer_top->ResetCamera(m_pActor_Ait->GetBounds());
 
 		m_pRenderer_front->GetActiveCamera()->SetPosition(toolx, tooly, toolz-cam_offset);
 		m_pRenderer_front->GetActiveCamera()->SetFocalPoint(toolx, tooly, toolz);
-		m_pRenderer_front->ResetCamera(m_pActor_CItool->GetBounds());
+		m_pRenderer_front->ResetCamera(m_pActor_Ait->GetBounds());
 		
 		m_pRenderer_side->GetActiveCamera()->SetPosition(toolx, tooly - cam_offset, toolz);
 		m_pRenderer_side->GetActiveCamera()->SetFocalPoint(toolx, tooly, toolz);
-		m_pRenderer_side->ResetCamera(m_pActor_CItool->GetBounds());
+		m_pRenderer_side->ResetCamera(m_pActor_Ait->GetBounds());
 
 		m_pRenderer_oblique->GetActiveCamera()->SetFocalPoint(toolx, tooly, toolz);
-		m_pRenderer_oblique->ResetCamera(m_pActor_CItool->GetBounds());
+		m_pRenderer_oblique->ResetCamera(m_pActor_Ait->GetBounds());
 	}
 	else if (senderObjName == "centerProbe")
 	{
@@ -604,17 +645,17 @@ void vtk_test::slot_CenterView(QString senderObjName)
 	{    
 		m_pRenderer_top->GetActiveCamera()->SetPosition(targetx - cam_offset, targety, targetz);
 		m_pRenderer_top->GetActiveCamera()->SetFocalPoint(targetx, targety,	targetz);
-		m_pRenderer_top->ResetCamera(m_pActor_CItarget->GetBounds());
+		m_pRenderer_top->ResetCamera(m_pActor_AitTarget->GetBounds());
 
 		m_pRenderer_front->GetActiveCamera()->SetPosition(targetx, targety, targetz - cam_offset);
 		m_pRenderer_front->GetActiveCamera()->SetFocalPoint(targetx, targety, targetz);
-		m_pRenderer_front->ResetCamera(m_pActor_CItarget->GetBounds());
+		m_pRenderer_front->ResetCamera(m_pActor_AitTarget->GetBounds());
 
 		m_pRenderer_side->GetActiveCamera()->SetPosition(targetx, targety - cam_offset, targetz);
 		m_pRenderer_side->GetActiveCamera()->SetFocalPoint(targetx, targety, targetz);
-		m_pRenderer_side->ResetCamera(m_pActor_CItarget->GetBounds());
+		m_pRenderer_side->ResetCamera(m_pActor_AitTarget->GetBounds());
 
-		m_pRenderer_oblique->ResetCamera(m_pActor_CItarget->GetBounds());
+		m_pRenderer_oblique->ResetCamera(m_pActor_AitTarget->GetBounds());
 	}
 	else
 	{
@@ -650,12 +691,12 @@ void vtk_test::slot_CenterView(QString senderObjName)
     m_pRenderer_side_inset->ResetCameraClippingRange();
 }
 
-void vtk_test::slot_CenterTarget()
+void CI_Guidance::slot_CenterTarget()
 {
 	slot_CenterView("centerCItarget");
 }
 
-void vtk_test::slot_Load_Plan()
+void CI_Guidance::slot_Load_Plan()
 {
     // open file dialog and select trajectory plan
     QString fileName = QFileDialog::getOpenFileName(this, "Open Patient Data File", NULL, "CI Plan (*.ini);;All Files (*.*)");
@@ -668,31 +709,25 @@ void vtk_test::slot_Load_Plan()
     }
 }
 
-void vtk_test::slot_Pivot_Calibation()
+void CI_Guidance::slot_Pivot_Calibation()
 {
     Pivot_Calibration pivotCalWidget;
-    connect(this, SIGNAL(sgn_NewToolTransform(Eigen::Matrix4d)), &pivotCalWidget, SLOT(slot_onNewToolTransform(Eigen::Matrix4d)));
+    connect(this, SIGNAL(sgn_NewAitTransform(Eigen::Matrix4d)), &pivotCalWidget, SLOT(slot_onNewAitTransform(Eigen::Matrix4d)));
 
     pivotCalWidget.exec();
 
     // save the tip offset translation
     m_T_tool_tip.block<3, 1>(0, 3) = pivotCalWidget.tOffset();
 
-    disconnect(this, SIGNAL(sgn_NewToolTransform(Matrix4d)), &pivotCalWidget, SLOT(slot_onNewToolTransform(Matrix4d)));
+    disconnect(this, SIGNAL(sgn_NewAitTransform(Matrix4d)), &pivotCalWidget, SLOT(slot_onNewAitTransform(Matrix4d)));
 }
 
-void vtk_test::slot_Update_Skull(Eigen::Matrix3Xd & markers, int)
+void CI_Guidance::slot_Update_Skull(Eigen::Matrix3Xd fiducials, quint8 numFiducials)
 {
-    if (m_numStrayMarkers == 0) {
-        return;
-    }
-
-    Eigen::Matrix3Xd markersTrimmed = markers.block(0, 0, 3, m_numStrayMarkers); // remove extra columns
-
     // compute registration to find transformation that takes points in CT frame into the tracker frame
     // pts_tracker = T_tracker_ct * pts_ct
     RigidRegistration T_tracker_ct;
-    pointRegisterOutliers(m_patientData->fiducials(), markersTrimmed, T_tracker_ct);
+    pointRegisterOutliers(m_patientData->fiducials(), fiducials, T_tracker_ct);
 
     // reset all markers
     for (qint8 ii = 0; ii < numFiducialActors; ++ii) {
@@ -701,7 +736,7 @@ void vtk_test::slot_Update_Skull(Eigen::Matrix3Xd & markers, int)
     }
 
     // unhide detected markers
-    for (qint8 ii = 0; ii < m_numStrayMarkers; ++ii) {
+    for (qint8 ii = 0; ii < numFiducials; ++ii) {
         m_pActor_fiducials.at(ii)->SetVisibility(true);
     }
 
@@ -732,7 +767,7 @@ void vtk_test::slot_Update_Skull(Eigen::Matrix3Xd & markers, int)
     
 }
 
-void vtk_test::slot_LiveTracking(int state)
+void CI_Guidance::slot_LiveTracking(int state)
 {
     if (planLoaded) {
         if (state) {
@@ -744,15 +779,15 @@ void vtk_test::slot_LiveTracking(int state)
     }
 }
 
-void vtk_test::slot_Tracker_Stop() {
+void CI_Guidance::slot_Tracker_Stop() {
 	ui.actionTracker_Init->setDisabled(false);
 	ui.actionTracker_Stop->setDisabled(true);
-	m_timerGui.stop();
+	m_guiTimer.stop();
 	m_tracker->StopTracking();
 	isTracking = false;
 }
 
-void vtk_test::slot_Tracker_Init() {
+void CI_Guidance::slot_Tracker_Init() {
 	if (m_tracker != NULL)
 		delete m_tracker;
 	m_tracker = new NDIAuroraTracker(this->tracker_Port);
@@ -764,7 +799,7 @@ void vtk_test::slot_Tracker_Init() {
 			cout << "Error! The tracker can no track! " << endl;
 		else {
 			cout << "Working! Starting tracking!" << endl;
-			m_timerGui.start();
+			m_guiTimer.start();
 			ui.actionTracker_Init->setDisabled(true);
 			ui.actionTracker_Stop->setDisabled(false);
 			isTracking = true;
@@ -774,7 +809,7 @@ void vtk_test::slot_Tracker_Init() {
 		cout << " ERROR! The tracker can not be initialized!" << endl;
 }
 
-void vtk_test::Update_err()
+void CI_Guidance::Update_err()
 {
 	// transformation between tip of the AIT and the target, in the tip frame
     Matrix4d T_tip_target = m_T_tracker_tip.inverse().eval() * m_T_tracker_target;
@@ -816,7 +851,7 @@ void vtk_test::Update_err()
 	m_errors.phi = acos(R_xalign(1, 1));
 
 	/*cout << "CItarget:" << endl << m_T_tracker_target << endl;
-	cout << "CItool:"	<< endl << m_T_tracker_tool << endl;
+	cout << "CItool:"	<< endl << m_T_tracker_Ait << endl;
 	cout << "Hti:"		<< endl << Hti << endl;
 	cout << "phi = "	<< (m_errors.phi*180.0 / M_PI) << endl;
 	cout << "theta = "	<< (m_errors.theta*180.0 / M_PI) << endl << endl;*/
@@ -825,7 +860,7 @@ void vtk_test::Update_err()
 	emit sgn_err_ang(m_errors.theta);
 }
 
-void vtk_test::SetTransformforCI_target(patient_data * ref_patient_data, Eigen::Matrix4d T_tracker_ct)
+void CI_Guidance::SetTransformforCI_target(patient_data * ref_patient_data, Eigen::Matrix4d T_tracker_ct)
 {
     /* 
         We want to find T_tracker_tool: the transformation for the desired tool pose in the tracker frame
@@ -858,38 +893,22 @@ void vtk_test::SetTransformforCI_target(patient_data * ref_patient_data, Eigen::
 
     /* T_tracker_target: tranformation for the target point, in the tracker frame */
     m_T_tracker_target = T_tracker_ct * T_ct_target;
+    emit sgn_NewTubeTargetTransform(m_T_tracker_target); // target and tip of guide tube are coincident
+
 
     /* T_tracker_tool: transformation for the desired tool pose, in the tracker frame */
-    Eigen::Matrix4d T_tracker_tool = m_T_tracker_target * T_target_tool;
-
-
-    /* Update Actors */
-    Matrix4d target_transpose = m_T_tracker_target.transpose();
-    vtkSmartPointer<vtkTransform> vtkT_target = vtkSmartPointer<vtkTransform>::New();
-    vtkT_target->SetMatrix(target_transpose.data());
-    m_pActor_target_desired->SetUserTransform(vtkT_target);
-
-    m_pActor_guideTubeTarget->SetUserTransform(vtkT_target);
-
-    Matrix4d CItarget_transpose = T_tracker_tool.transpose();
-    vtkSmartPointer<vtkTransform> vtkT_tool = vtkSmartPointer<vtkTransform>::New();
-    vtkT_tool->SetMatrix(CItarget_transpose.data());
-    m_pActor_CItarget->SetUserTransform(vtkT_tool);
-
-    Matrix4d cochlea_transpose = T_tracker_ct.transpose();
-    vtkSmartPointer<vtkTransform> vtkT_tracker_ct = vtkSmartPointer<vtkTransform>::New();
-    vtkT_tracker_ct->SetMatrix(cochlea_transpose.data());
-    m_pActor_cochlea->SetUserTransform(vtkT_tracker_ct);
+    Eigen::Matrix4d T_tracker_AitTarget = m_T_tracker_target * T_target_tool;
+    emit sgn_NewAitTargetTransform(T_tracker_AitTarget);
 }
 
-void vtk_test::SetTransformforCI_target(Eigen::MatrixXd T_target)
+void CI_Guidance::SetTransformforCI_target(Eigen::MatrixXd T_target)
 {
 	vtkSmartPointer<vtkTransform> vtkT_CI = vtkSmartPointer<vtkTransform>::New();
 	vtkT_CI->SetMatrix(T_target.data());
-	m_pActor_CItarget->SetUserTransform( vtkT_CI );
+	m_pActor_AitTarget->SetUserTransform( vtkT_CI );
 }
 
-vtkSmartPointer<vtkActor> vtk_test::LoadOBJFile(QString const& str,double opacity, double color[3]) const
+vtkSmartPointer<vtkActor> CI_Guidance::LoadOBJFile(QString const& str,double opacity, double color[3]) const
 {
 	vtkSmartPointer<vtkOBJReader> reader = vtkSmartPointer<vtkOBJReader>::New();
 	reader->SetFileName( str.toLocal8Bit().data() );
@@ -929,7 +948,7 @@ vtkSmartPointer<vtkActor> vtk_test::LoadOBJFile(QString const& str,double opacit
 	return pActor;
 }
 
-vtkSmartPointer<vtkActor> vtk_test::LoadSTLFile(QString const& str, double opacity, double color[3]) const
+vtkSmartPointer<vtkActor> CI_Guidance::LoadSTLFile(QString const& str, double opacity, double color[3]) const
 {
 	vtkSmartPointer<vtkSTLReader> reader = vtkSmartPointer<vtkSTLReader>::New();
 	reader->SetFileName(str.toLocal8Bit().data());
@@ -967,7 +986,7 @@ vtkSmartPointer<vtkActor> vtk_test::LoadSTLFile(QString const& str, double opaci
 	return pActor;
 }
 
-void vtk_test::slot_Register_Patient()
+void CI_Guidance::slot_Register_Patient()
 {
 	// open file dialog and select patient trajectory plan
     QString fileName = QFileDialog::getOpenFileName(this, "Open Patient Data File", NULL, "CI Plan (*.ini);;All Files (*.*)");
@@ -993,13 +1012,13 @@ void vtk_test::slot_Register_Patient()
 	SetTransformforCI_target(m_patientData, reg.GetTransform());
 }
 
-void vtk_test::slot_update_COM(int thePort) {
+void CI_Guidance::slot_update_COM(int thePort) {
 	this->tracker_Port = thePort;
 	QString trackerText = "Init Port " + QString::number(this->tracker_Port + 1);
 	ui.actionTracker_Init->setText(trackerText);
 }
 
-void vtk_test::slot_Tracker_Setup()
+void CI_Guidance::slot_Tracker_Setup()
 {
 	// ensure we are not creating duplicates
 	if (pTrackerSetup != NULL)
@@ -1010,7 +1029,7 @@ void vtk_test::slot_Tracker_Setup()
 	pTrackerSetup->show();
 }
 
-void vtk_test::slot_Demo()
+void CI_Guidance::slot_Demo()
 {
 	// ensure we are not creating duplicates
 	if(pDemo_Widget != NULL)
@@ -1019,7 +1038,7 @@ void vtk_test::slot_Demo()
 	}
 	pDemo_Widget = new Demo_Widget();
 
-	// connect signals from Demo_Widget to slots in vtk_test
+	// connect signals from Demo_Widget to slots in CI_Guidance
 	connect(pDemo_Widget, SIGNAL(sgn_SetTarget()),	  this, SLOT(slot_SetTarget()));
 	connect(pDemo_Widget, SIGNAL(sgn_DatalogStart()), this, SLOT(slot_DatalogStart()));
 	connect(pDemo_Widget, SIGNAL(sgn_DatalogStop()),  this, SLOT(slot_DatalogStop()));
@@ -1030,12 +1049,12 @@ void vtk_test::slot_Demo()
 	pDemo_Widget->show();
 }
 
-void vtk_test::slot_SetTarget()
+void CI_Guidance::slot_SetTarget()
 {
 	flag_SetTarget = TRUE;
 }
 
-void vtk_test::slot_DatalogStart()
+void CI_Guidance::slot_DatalogStart()
 {
 	// create time-stamped filename
 	QString filename = QDate::currentDate().toString("yyyy-MM-dd");
@@ -1068,7 +1087,7 @@ void vtk_test::slot_DatalogStart()
 	// Note: file is automatically closed when program is terminated
 }
 
-void vtk_test::slot_DatalogStop()
+void CI_Guidance::slot_DatalogStop()
 {
 	// stop datalogging
 	disconnect(this, SIGNAL(sgn_WriteData()), this, SLOT(slot_WriteData()));
@@ -1082,7 +1101,7 @@ void vtk_test::slot_DatalogStop()
 	}
 }
 
-void vtk_test::slot_WriteData(double err_ci, double err_mag)
+void CI_Guidance::slot_WriteData(double err_ci, double err_mag)
 {	// legacy method- do not use!!
 
 	// write next line
@@ -1090,7 +1109,7 @@ void vtk_test::slot_WriteData(double err_ci, double err_mag)
 	datalogStream << QString::number(m_datalogTimer.elapsed()) << ", " << QString::number(err_ci) << endl;
 }
 
-void vtk_test::slot_WriteData()
+void CI_Guidance::slot_WriteData()
 {
 	// write next line
 	QTextStream datalogStream(pDatalogFile);

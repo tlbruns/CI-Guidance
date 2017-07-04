@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <ui version="4.0">
- <class>vtk_testClass</class>
- <widget class="QMainWindow" name="vtk_testClass">
+ <class>CI_Guidance_Ui</class>
+ <widget class="QMainWindow" name="CI_Guidance_Ui">
   <property name="geometry">
    <rect>
     <x>0</x>
@@ -11,7 +11,7 @@
    </rect>
   </property>
   <property name="windowTitle">
-   <string>vtk_test</string>
+   <string>CI Guidance</string>
   </property>
   <widget class="QWidget" name="centralWidget">
    <layout class="QGridLayout" name="gridLayout_3">
@@ -146,7 +146,7 @@
   <connection>
    <sender>actionClose</sender>
    <signal>triggered()</signal>
-   <receiver>vtk_testClass</receiver>
+   <receiver>CI_Guidance_Ui</receiver>
    <slot>close()</slot>
    <hints>
     <hint type="sourcelabel">

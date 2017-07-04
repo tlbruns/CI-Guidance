@@ -94,6 +94,10 @@ public:
     QLabel *label_mag_status_3;
     QLabel *label_text_CITool_ang;
     QSpacerItem *horizontalSpacer_8;
+    QHBoxLayout *horizontalLayout_4;
+    QPushButton *button_recordData;
+    QLabel *label_recordData;
+    QSpacerItem *horizontalSpacer_9;
     QHBoxLayout *Logos;
     QLabel *logo_VUeng;
     QLabel *logo_medlab;
@@ -102,7 +106,7 @@ public:
     {
         if (Info->objectName().isEmpty())
             Info->setObjectName(QStringLiteral("Info"));
-        Info->resize(518, 1284);
+        Info->resize(455, 1284);
         Info->setMinimumSize(QSize(0, 1284));
         verticalLayout = new QVBoxLayout(Info);
         verticalLayout->setObjectName(QStringLiteral("verticalLayout"));
@@ -518,6 +522,29 @@ public:
 
         verticalLayout->addWidget(ErrorBox_angle);
 
+        horizontalLayout_4 = new QHBoxLayout();
+        horizontalLayout_4->setSpacing(3);
+        horizontalLayout_4->setObjectName(QStringLiteral("horizontalLayout_4"));
+        horizontalLayout_4->setSizeConstraint(QLayout::SetMinimumSize);
+        button_recordData = new QPushButton(Info);
+        button_recordData->setObjectName(QStringLiteral("button_recordData"));
+        sizePolicy1.setHeightForWidth(button_recordData->sizePolicy().hasHeightForWidth());
+        button_recordData->setSizePolicy(sizePolicy1);
+
+        horizontalLayout_4->addWidget(button_recordData);
+
+        label_recordData = new QLabel(Info);
+        label_recordData->setObjectName(QStringLiteral("label_recordData"));
+
+        horizontalLayout_4->addWidget(label_recordData);
+
+        horizontalSpacer_9 = new QSpacerItem(300, 1, QSizePolicy::Preferred, QSizePolicy::Minimum);
+
+        horizontalLayout_4->addItem(horizontalSpacer_9);
+
+
+        verticalLayout->addLayout(horizontalLayout_4);
+
         Logos = new QHBoxLayout();
         Logos->setSpacing(0);
         Logos->setObjectName(QStringLiteral("Logos"));
@@ -596,6 +623,8 @@ public:
         label_text_error2_5->setText(QApplication::translate("Info", "Error =", 0));
         label_mag_status_3->setText(QString());
         label_text_CITool_ang->setText(QApplication::translate("Info", "CI Tool", 0));
+        button_recordData->setText(QApplication::translate("Info", "Record Data", 0));
+        label_recordData->setText(QString());
         logo_VUeng->setText(QString());
         logo_medlab->setText(QString());
     } // retranslateUi

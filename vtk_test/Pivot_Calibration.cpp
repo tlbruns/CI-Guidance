@@ -15,7 +15,7 @@ Pivot_Calibration::Pivot_Calibration(QWidget *parent)
     connect(ui->pushButton_reset, SIGNAL(clicked()), this, SLOT(slot_reset()));
 }
 
-void Pivot_Calibration::slot_onNewToolTransform(Eigen::Matrix4d currentT)
+void Pivot_Calibration::slot_onNewAitTransform(Eigen::Matrix4d currentT)
 {
     currentT_ = currentT;
 }

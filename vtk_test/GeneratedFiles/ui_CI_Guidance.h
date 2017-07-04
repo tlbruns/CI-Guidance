@@ -1,13 +1,13 @@
 /********************************************************************************
-** Form generated from reading UI file 'vtk_test.ui'
+** Form generated from reading UI file 'CI_Guidance.ui'
 **
 ** Created by: Qt User Interface Compiler version 5.2.1
 **
 ** WARNING! All changes made in this file will be lost when recompiling UI file!
 ********************************************************************************/
 
-#ifndef UI_VTK_TEST_H
-#define UI_VTK_TEST_H
+#ifndef UI_CI_GUIDANCE_H
+#define UI_CI_GUIDANCE_H
 
 #include <QtCore/QVariant>
 #include <QtWidgets/QAction>
@@ -24,7 +24,7 @@
 
 QT_BEGIN_NAMESPACE
 
-class Ui_vtk_testClass
+class Ui_CI_Guidance_Ui
 {
 public:
     QAction *actionClose;
@@ -47,36 +47,36 @@ public:
     QToolBar *mainToolBar;
     QStatusBar *statusBar;
 
-    void setupUi(QMainWindow *vtk_testClass)
+    void setupUi(QMainWindow *CI_Guidance_Ui)
     {
-        if (vtk_testClass->objectName().isEmpty())
-            vtk_testClass->setObjectName(QStringLiteral("vtk_testClass"));
-        vtk_testClass->resize(1016, 866);
-        actionClose = new QAction(vtk_testClass);
+        if (CI_Guidance_Ui->objectName().isEmpty())
+            CI_Guidance_Ui->setObjectName(QStringLiteral("CI_Guidance_Ui"));
+        CI_Guidance_Ui->resize(1016, 866);
+        actionClose = new QAction(CI_Guidance_Ui);
         actionClose->setObjectName(QStringLiteral("actionClose"));
-        actionLoad_Patient_File = new QAction(vtk_testClass);
+        actionLoad_Patient_File = new QAction(CI_Guidance_Ui);
         actionLoad_Patient_File->setObjectName(QStringLiteral("actionLoad_Patient_File"));
-        actionTracker_Setup = new QAction(vtk_testClass);
+        actionTracker_Setup = new QAction(CI_Guidance_Ui);
         actionTracker_Setup->setObjectName(QStringLiteral("actionTracker_Setup"));
-        actionRegister_Patient = new QAction(vtk_testClass);
+        actionRegister_Patient = new QAction(CI_Guidance_Ui);
         actionRegister_Patient->setObjectName(QStringLiteral("actionRegister_Patient"));
-        actionDemo = new QAction(vtk_testClass);
+        actionDemo = new QAction(CI_Guidance_Ui);
         actionDemo->setObjectName(QStringLiteral("actionDemo"));
-        actionCenter_Target = new QAction(vtk_testClass);
+        actionCenter_Target = new QAction(CI_Guidance_Ui);
         actionCenter_Target->setObjectName(QStringLiteral("actionCenter_Target"));
-        actionTracker_Init = new QAction(vtk_testClass);
+        actionTracker_Init = new QAction(CI_Guidance_Ui);
         actionTracker_Init->setObjectName(QStringLiteral("actionTracker_Init"));
-        actionTracker_Stop = new QAction(vtk_testClass);
+        actionTracker_Stop = new QAction(CI_Guidance_Ui);
         actionTracker_Stop->setObjectName(QStringLiteral("actionTracker_Stop"));
-        actionTracker_Setup_2 = new QAction(vtk_testClass);
+        actionTracker_Setup_2 = new QAction(CI_Guidance_Ui);
         actionTracker_Setup_2->setObjectName(QStringLiteral("actionTracker_Setup_2"));
-        actionLoad_Plan = new QAction(vtk_testClass);
+        actionLoad_Plan = new QAction(CI_Guidance_Ui);
         actionLoad_Plan->setObjectName(QStringLiteral("actionLoad_Plan"));
-        actionPivot_Calibration = new QAction(vtk_testClass);
+        actionPivot_Calibration = new QAction(CI_Guidance_Ui);
         actionPivot_Calibration->setObjectName(QStringLiteral("actionPivot_Calibration"));
         actionPivot_Calibration->setCheckable(false);
         actionPivot_Calibration->setChecked(false);
-        centralWidget = new QWidget(vtk_testClass);
+        centralWidget = new QWidget(CI_Guidance_Ui);
         centralWidget->setObjectName(QStringLiteral("centralWidget"));
         gridLayout_3 = new QGridLayout(centralWidget);
         gridLayout_3->setSpacing(2);
@@ -89,21 +89,21 @@ public:
 
         gridLayout_3->addLayout(gridlayout, 0, 0, 1, 1);
 
-        vtk_testClass->setCentralWidget(centralWidget);
-        menuBar = new QMenuBar(vtk_testClass);
+        CI_Guidance_Ui->setCentralWidget(centralWidget);
+        menuBar = new QMenuBar(CI_Guidance_Ui);
         menuBar->setObjectName(QStringLiteral("menuBar"));
         menuBar->setGeometry(QRect(0, 0, 1016, 31));
         menuFile = new QMenu(menuBar);
         menuFile->setObjectName(QStringLiteral("menuFile"));
         menuTracker = new QMenu(menuBar);
         menuTracker->setObjectName(QStringLiteral("menuTracker"));
-        vtk_testClass->setMenuBar(menuBar);
-        mainToolBar = new QToolBar(vtk_testClass);
+        CI_Guidance_Ui->setMenuBar(menuBar);
+        mainToolBar = new QToolBar(CI_Guidance_Ui);
         mainToolBar->setObjectName(QStringLiteral("mainToolBar"));
-        vtk_testClass->addToolBar(Qt::TopToolBarArea, mainToolBar);
-        statusBar = new QStatusBar(vtk_testClass);
+        CI_Guidance_Ui->addToolBar(Qt::TopToolBarArea, mainToolBar);
+        statusBar = new QStatusBar(CI_Guidance_Ui);
         statusBar->setObjectName(QStringLiteral("statusBar"));
-        vtk_testClass->setStatusBar(statusBar);
+        CI_Guidance_Ui->setStatusBar(statusBar);
 
         menuBar->addAction(menuFile->menuAction());
         menuBar->addAction(menuTracker->menuAction());
@@ -118,36 +118,36 @@ public:
         mainToolBar->addAction(actionCenter_Target);
         mainToolBar->addAction(actionPivot_Calibration);
 
-        retranslateUi(vtk_testClass);
-        QObject::connect(actionClose, SIGNAL(triggered()), vtk_testClass, SLOT(close()));
+        retranslateUi(CI_Guidance_Ui);
+        QObject::connect(actionClose, SIGNAL(triggered()), CI_Guidance_Ui, SLOT(close()));
 
-        QMetaObject::connectSlotsByName(vtk_testClass);
+        QMetaObject::connectSlotsByName(CI_Guidance_Ui);
     } // setupUi
 
-    void retranslateUi(QMainWindow *vtk_testClass)
+    void retranslateUi(QMainWindow *CI_Guidance_Ui)
     {
-        vtk_testClass->setWindowTitle(QApplication::translate("vtk_testClass", "vtk_test", 0));
-        actionClose->setText(QApplication::translate("vtk_testClass", "Close", 0));
-        actionLoad_Patient_File->setText(QApplication::translate("vtk_testClass", "Load Patient File", 0));
-        actionTracker_Setup->setText(QApplication::translate("vtk_testClass", "Tracker Setup", 0));
-        actionRegister_Patient->setText(QApplication::translate("vtk_testClass", "Register Patient", 0));
-        actionDemo->setText(QApplication::translate("vtk_testClass", "Demo", 0));
-        actionCenter_Target->setText(QApplication::translate("vtk_testClass", "Center Target", 0));
-        actionTracker_Init->setText(QApplication::translate("vtk_testClass", "Init", 0));
-        actionTracker_Stop->setText(QApplication::translate("vtk_testClass", "Stop", 0));
-        actionTracker_Setup_2->setText(QApplication::translate("vtk_testClass", "Setup", 0));
-        actionLoad_Plan->setText(QApplication::translate("vtk_testClass", "Load Plan", 0));
-        actionPivot_Calibration->setText(QApplication::translate("vtk_testClass", "Pivot Calibration", 0));
-        menuFile->setTitle(QApplication::translate("vtk_testClass", "File", 0));
-        menuTracker->setTitle(QApplication::translate("vtk_testClass", "Tracker", 0));
+        CI_Guidance_Ui->setWindowTitle(QApplication::translate("CI_Guidance_Ui", "CI Guidance", 0));
+        actionClose->setText(QApplication::translate("CI_Guidance_Ui", "Close", 0));
+        actionLoad_Patient_File->setText(QApplication::translate("CI_Guidance_Ui", "Load Patient File", 0));
+        actionTracker_Setup->setText(QApplication::translate("CI_Guidance_Ui", "Tracker Setup", 0));
+        actionRegister_Patient->setText(QApplication::translate("CI_Guidance_Ui", "Register Patient", 0));
+        actionDemo->setText(QApplication::translate("CI_Guidance_Ui", "Demo", 0));
+        actionCenter_Target->setText(QApplication::translate("CI_Guidance_Ui", "Center Target", 0));
+        actionTracker_Init->setText(QApplication::translate("CI_Guidance_Ui", "Init", 0));
+        actionTracker_Stop->setText(QApplication::translate("CI_Guidance_Ui", "Stop", 0));
+        actionTracker_Setup_2->setText(QApplication::translate("CI_Guidance_Ui", "Setup", 0));
+        actionLoad_Plan->setText(QApplication::translate("CI_Guidance_Ui", "Load Plan", 0));
+        actionPivot_Calibration->setText(QApplication::translate("CI_Guidance_Ui", "Pivot Calibration", 0));
+        menuFile->setTitle(QApplication::translate("CI_Guidance_Ui", "File", 0));
+        menuTracker->setTitle(QApplication::translate("CI_Guidance_Ui", "Tracker", 0));
     } // retranslateUi
 
 };
 
 namespace Ui {
-    class vtk_testClass: public Ui_vtk_testClass {};
+    class CI_Guidance_Ui: public Ui_CI_Guidance_Ui {};
 } // namespace Ui
 
 QT_END_NAMESPACE
 
-#endif // UI_VTK_TEST_H
+#endif // UI_CI_GUIDANCE_H

@@ -19,7 +19,7 @@ public:
     Eigen::Vector3d tPivot(void);  // returns tPivot_
 
 public slots:
-    void slot_onNewToolTransform(Eigen::Matrix4d); // updates currentT_
+    void slot_onNewAitTransform(Eigen::Matrix4d); // updates currentT_
     void slot_takeSample(); // saves currentT_ to R_
     void slot_computeOffset();
     void slot_reset();
