@@ -145,6 +145,9 @@ private:
     std::vector<vtkSmartPointer<vtkActor>> m_pActor_fiducials;
     quint8                          numFiducialActors;
 
+    bool hideProbe;
+    bool hideCochlea;
+
     Eigen::Vector3d  m_colorCiTool;
     Eigen::Vector3d  m_colorCiTarget;
     Eigen::Vector3d  m_colorCochlea;

@@ -53,7 +53,7 @@ public slots:
 	void slot_onTimer3();
     void slot_onTimerSkull();
     void slot_onNewProbePosition(double, double, double);
-    void slot_onNewFiducialPositions(Eigen::Matrix3Xd &, int);
+    void slot_onNewFiducialPositions(Eigen::Matrix3Xd, quint8);
 	void slot_onRegister();
 	void slot_onSaveandFinish();
 

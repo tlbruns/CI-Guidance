@@ -273,7 +273,7 @@ void Pat_Reg_Widget::slot_onNewProbePosition(double x, double y, double z)
 	}
 }
 
-void Pat_Reg_Widget::slot_onNewFiducialPositions(Eigen::Matrix3Xd & fiducials, int numFiducials)
+void Pat_Reg_Widget::slot_onNewFiducialPositions(Eigen::Matrix3Xd fiducials, quint8 numFiducials)
 {
     Eigen::Matrix3Xd fiducialsTrimmed = fiducials.block(0,0, 3, numFiducials); // remove extra columns
 
