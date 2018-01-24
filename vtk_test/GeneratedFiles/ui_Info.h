@@ -99,7 +99,6 @@ public:
     QLabel *label_recordData;
     QSpacerItem *horizontalSpacer_9;
     QHBoxLayout *Logos;
-    QLabel *logo_VUeng;
     QLabel *logo_medlab;
 
     void setupUi(QWidget *Info)
@@ -549,17 +548,16 @@ public:
         Logos->setSpacing(0);
         Logos->setObjectName(QStringLiteral("Logos"));
         Logos->setContentsMargins(0, -1, -1, -1);
-        logo_VUeng = new QLabel(Info);
-        logo_VUeng->setObjectName(QStringLiteral("logo_VUeng"));
-        logo_VUeng->setEnabled(true);
-        logo_VUeng->setPixmap(QPixmap(QString::fromUtf8(":/images/Resources/engineering_logo1_small.tif")));
-        logo_VUeng->setAlignment(Qt::AlignBottom|Qt::AlignRight|Qt::AlignTrailing);
-
-        Logos->addWidget(logo_VUeng);
-
         logo_medlab = new QLabel(Info);
         logo_medlab->setObjectName(QStringLiteral("logo_medlab"));
-        logo_medlab->setPixmap(QPixmap(QString::fromUtf8(":/images/Resources/medlab_logo.jpg")));
+        logo_medlab->setEnabled(true);
+        QSizePolicy sizePolicy3(QSizePolicy::Expanding, QSizePolicy::Preferred);
+        sizePolicy3.setHorizontalStretch(0);
+        sizePolicy3.setVerticalStretch(0);
+        sizePolicy3.setHeightForWidth(logo_medlab->sizePolicy().hasHeightForWidth());
+        logo_medlab->setSizePolicy(sizePolicy3);
+        logo_medlab->setMinimumSize(QSize(200, 100));
+        logo_medlab->setPixmap(QPixmap(QString::fromUtf8(":/images/Resources/medlab_logo_new.jpg")));
         logo_medlab->setScaledContents(false);
         logo_medlab->setAlignment(Qt::AlignBottom|Qt::AlignLeading|Qt::AlignLeft);
         logo_medlab->setIndent(-1);
@@ -625,7 +623,6 @@ public:
         label_text_CITool_ang->setText(QApplication::translate("Info", "CI Tool", 0));
         button_recordData->setText(QApplication::translate("Info", "Record Data", 0));
         label_recordData->setText(QString());
-        logo_VUeng->setText(QString());
         logo_medlab->setText(QString());
     } // retranslateUi
 

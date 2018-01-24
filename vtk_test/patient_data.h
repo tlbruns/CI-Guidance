@@ -27,5 +27,7 @@ private:
     Eigen::Vector3d m_target;
     Eigen::Vector3d m_entry;
     Eigen::Vector3d m_orientation;
+    Eigen::Vector3d m_targetPPR;
+    Eigen::Vector3d m_entryPPR;
 };
 

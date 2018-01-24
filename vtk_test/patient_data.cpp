@@ -38,6 +38,14 @@ bool patient_data::parse(void)
                      iniFile.value("plan/orient/y").toDouble(),
                      iniFile.value("plan/orient/z").toDouble();
 
+ /*   m_targetPPR << iniFile.value("plan/targetPPR/x").toDouble(),
+                   iniFile.value("plan/targetPPR/y").toDouble(),
+                   iniFile.value("plan/targetPPR/z").toDouble();
+
+    m_entryPPR << iniFile.value("plan/entryPPR/x").toDouble(),
+                  iniFile.value("plan/entryPPR/y").toDouble(),
+                  iniFile.value("plan/entryPPR/z").toDouble();*/
+
     if (m_target.isZero(1e-5) | m_orientation.isZero(1e-5) | m_entry.isZero(1e-5)) {
         return false;
     }

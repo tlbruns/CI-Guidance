@@ -46,7 +46,7 @@
 #endif
 
 #define	 TRACKER_SIMULATE		0		// 1 for simulate, 0 if using tracker  NOT CURRENTLY WORKING!!
-#define  TRACKER_COMPORT		8		// NOTE: COM port is zero-indexed (N-1)
+#define  TRACKER_COMPORT		6		// NOTE: COM port is zero-indexed (N-1)
 #define	 PROBE_DESIRED_X		-79.3	// fixed position to use as the target pose
 #define	 PROBE_DESIRED_Y		-376.8	
 #define	 PROBE_DESIRED_Z		1451.95
@@ -82,7 +82,7 @@ CI_Guidance::CI_Guidance(QWidget *parent)
     hideCochlea = true;
 	
 	dpi = QApplication::screens().at(0)->physicalDotsPerInch();
-
+  
     m_colorCiTool    << 0.3, 1.0, 0.3;
     m_colorCiTarget  << 0.8, 0.3, 0.3;
     m_colorCochlea   << 0.75, 0.04, 0.84;
@@ -95,8 +95,9 @@ CI_Guidance::CI_Guidance(QWidget *parent)
 	// setup info panel on left side
 	InfoWidget *iw = new InfoWidget(this);
 	ui.gridlayout->addWidget(iw,0,0,2,1);
-	iw->setMaximumSize( (int)(2*dpi), (int)(25*dpi));
-	
+    //iw->setMaximumSize((int)(2 * dpi), (int)(25 * dpi));
+    iw->setMaximumSize(450, 4000);
+
 
 	// setup top view
 	m_pQVTK_top= new QVTKWidget(this);
@@ -198,8 +199,11 @@ CI_Guidance::~CI_Guidance()
 
 void CI_Guidance::InitVTK() 
 {
+    QSize view_dims  = QSize(3 * dpi, 3 * dpi);
+    QSize inset_dims = QSize(1.5 * dpi, 1.25 * dpi);
+
 	m_pRenderer_top = vtkSmartPointer<vtkRenderer>::New();  // setup VTK renderer
-	m_pQVTK_top->setMinimumSize((int)(3 * dpi), (int)(3 * dpi));
+	m_pQVTK_top->setMinimumSize(view_dims);
 	m_pQVTK_top->GetRenderWindow()->AddRenderer(m_pRenderer_top);
 	m_pRenderer_top->SetBackground(0.8, 0.8, 0.8);
 	m_pRenderer_top->SetGradientBackground(true);
@@ -212,9 +216,9 @@ void CI_Guidance::InitVTK()
 	m_pRenderer_top->SetActiveCamera(camera_top);
 
 	m_pRenderer_top_inset = vtkSmartPointer<vtkRenderer>::New();
-	//m_pQVTK_top_inset->setMinimumSize((int)(0.5 * dpi), (int)(0.5 * dpi)); // for lower res displays
-	m_pQVTK_top_inset->setMinimumSize((int)(1 * dpi), (int)(1 * dpi));
-	m_pQVTK_top_inset->setMaximumSize((int)(1.5*dpi), (int)(1.5*dpi));
+	m_pQVTK_top_inset->setMinimumSize(inset_dims); // for lower res displays
+	//m_pQVTK_top_inset->setMinimumSize((int)(1 * dpi), (int)(1 * dpi));
+	//m_pQVTK_top_inset->setMaximumSize((int)(2.0*dpi), (int)(2.0*dpi));
 	m_pQVTK_top_inset->GetRenderWindow()->AddRenderer(m_pRenderer_top_inset);
 	m_pRenderer_top_inset->SetBackground(0.8, 0.8, 0.8);
 	m_pRenderer_top_inset->SetGradientBackground(true);
@@ -228,8 +232,8 @@ void CI_Guidance::InitVTK()
 	m_pRenderer_top_inset->SetActiveCamera(camera_top_inset);
 
 	m_pRenderer_oblique = vtkSmartPointer<vtkRenderer>::New();
-	m_pQVTK_oblique->setMinimumSize((int)(3 * dpi), (int)(3 * dpi));
-	m_pQVTK_oblique->GetRenderWindow()->AddRenderer(m_pRenderer_oblique);
+    m_pQVTK_oblique->setMinimumSize(view_dims);
+    m_pQVTK_oblique->GetRenderWindow()->AddRenderer(m_pRenderer_oblique);
 	m_pRenderer_oblique->SetBackground(0.8, 0.8, 0.8);
 	m_pRenderer_oblique->SetGradientBackground(true);
 
@@ -241,7 +245,7 @@ void CI_Guidance::InitVTK()
 	m_pRenderer_oblique->SetActiveCamera(camera_oblique);
 
 	m_pRenderer_front = vtkSmartPointer<vtkRenderer>::New();
-	m_pQVTK_front->setMinimumSize((int)(3 * dpi), (int)(3 * dpi));
+	m_pQVTK_front->setMinimumSize(view_dims);
 	m_pQVTK_front->GetRenderWindow()->AddRenderer(m_pRenderer_front);
 	m_pRenderer_front->SetBackground(0.8, 0.8, 0.8);
 	m_pRenderer_front->SetGradientBackground(true);
@@ -252,11 +256,11 @@ void CI_Guidance::InitVTK()
 	camera_front->SetViewUp(-1, 0, 0);
 	camera_front->SetClippingRange(-3500, 1000); // based on tracker workspace limits in z
 	m_pRenderer_front->SetActiveCamera(camera_front);
-
+    
 	m_pRenderer_front_inset = vtkSmartPointer<vtkRenderer>::New();
-	//m_pQVTK_front_inset->setMinimumSize((int)(0.5 * dpi), (int)(0.5 * dpi)); // for lower res displays
-	m_pQVTK_front_inset->setMinimumSize((int)(1 * dpi), (int)(1 * dpi));
-	m_pQVTK_front_inset->setMaximumSize((int)(1.5*dpi), (int)(1.5*dpi));
+	m_pQVTK_front_inset->setMinimumSize(inset_dims); // for lower res displays
+	//m_pQVTK_front_inset->setMinimumSize((int)(1 * dpi), (int)(1 * dpi));
+	//m_pQVTK_front_inset->setMaximumSize((int)(2.0*dpi), (int)(2.0*dpi));
 	m_pQVTK_front_inset->GetRenderWindow()->AddRenderer(m_pRenderer_front_inset);
 	m_pRenderer_front_inset->SetBackground(0.8, 0.8, 0.8);
 	m_pRenderer_front_inset->SetGradientBackground(true);
@@ -269,7 +273,7 @@ void CI_Guidance::InitVTK()
 	m_pRenderer_front_inset->SetActiveCamera(camera_front_inset);
 
 	m_pRenderer_side = vtkSmartPointer<vtkRenderer>::New();
-	m_pQVTK_side->setMinimumSize((int)(3 * dpi), (int)(3 * dpi));
+	m_pQVTK_side->setMinimumSize(view_dims);
 	m_pQVTK_side->GetRenderWindow()->AddRenderer(m_pRenderer_side);
 	m_pRenderer_side->SetBackground(0.8, 0.8, 0.8);
 	m_pRenderer_side->SetGradientBackground(true);
@@ -282,9 +286,8 @@ void CI_Guidance::InitVTK()
 	m_pRenderer_side->SetActiveCamera(camera_side);
 
 	m_pRenderer_side_inset = vtkSmartPointer<vtkRenderer>::New();
-	//m_pQVTK_side_inset->setMinimumSize((int)(0.5 * dpi), (int)(0.5 * dpi));
-	m_pQVTK_side_inset->setMinimumSize((int)(1 * dpi), (int)(1 * dpi));
-	m_pQVTK_side_inset->setMaximumSize((int)(1.5*dpi), (int)(1.5*dpi));
+	m_pQVTK_side_inset->setMinimumSize(inset_dims);
+	//m_pQVTK_side_inset->setMaximumSize((int)(2.0*dpi), (int)(2.0*dpi));
 	m_pQVTK_side_inset->GetRenderWindow()->AddRenderer(m_pRenderer_side_inset);
 	m_pRenderer_side_inset->SetBackground(0.8, 0.8, 0.8);
 	m_pRenderer_side_inset->SetGradientBackground(true);
@@ -606,7 +609,7 @@ void CI_Guidance::slot_onRegistration(Eigen::MatrixXd T)
 void CI_Guidance::slot_CenterView(QString senderObjName)
 {
 	double cam_offset = 30; // distance to offset camera from focal point
-    double inset_offset = 5;
+    double inset_offset = 8;
 
     double targetx = m_T_tracker_target(0, 3);
     double targety = m_T_tracker_target(1, 3);
@@ -636,8 +639,9 @@ void CI_Guidance::slot_CenterView(QString senderObjName)
 		m_pRenderer_side->GetActiveCamera()->SetFocalPoint(toolx, tooly, toolz);
 		m_pRenderer_side->ResetCamera(m_pActor_Ait->GetBounds());
 
-		m_pRenderer_oblique->GetActiveCamera()->SetFocalPoint(toolx, tooly, toolz);
-		m_pRenderer_oblique->ResetCamera(m_pActor_Ait->GetBounds());
+        m_pRenderer_oblique->GetActiveCamera()->SetPosition(toolx - cam_offset, tooly - cam_offset, toolz - cam_offset);
+        m_pRenderer_oblique->GetActiveCamera()->SetFocalPoint(toolx, tooly, toolz);
+        m_pRenderer_oblique->ResetCamera(m_pActor_Ait->GetBounds());
 	}
 	else if (senderObjName == "centerProbe")
 	{
@@ -656,8 +660,8 @@ void CI_Guidance::slot_CenterView(QString senderObjName)
 		m_pRenderer_side->GetActiveCamera()->SetFocalPoint(probex, probey, probez);
 		m_pRenderer_side->ResetCamera(m_pActor_probe->GetBounds());
 
+        m_pRenderer_oblique->ResetCamera(m_pActor_probe->GetBounds());
 		m_pRenderer_oblique->GetActiveCamera()->SetFocalPoint(probex, probey, probez);
-		m_pRenderer_oblique->ResetCamera(m_pActor_probe->GetBounds());
 	}
 	else if (senderObjName == "centerCItarget")
 	{    
@@ -674,6 +678,7 @@ void CI_Guidance::slot_CenterView(QString senderObjName)
 		m_pRenderer_side->ResetCamera(m_pActor_AitTarget->GetBounds());
 
 		m_pRenderer_oblique->ResetCamera(m_pActor_AitTarget->GetBounds());
+        m_pRenderer_oblique->GetActiveCamera()->Zoom(0.5);
 	}
 	else
 	{
@@ -681,8 +686,8 @@ void CI_Guidance::slot_CenterView(QString senderObjName)
 	}
 
 	// increase size to fill window better
-    double zoom = 1.0;
-    m_pRenderer_top->GetActiveCamera()->Zoom(zoom);
+    double zoom = 0.7;
+    m_pRenderer_top->GetActiveCamera()->Zoom(1.2 * zoom);
     m_pRenderer_front->GetActiveCamera()->Zoom(zoom);
 	m_pRenderer_side->GetActiveCamera()->Zoom(zoom);
 

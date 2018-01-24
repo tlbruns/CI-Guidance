@@ -1,5 +1,6 @@
 <RCC>
   <qresource prefix="/images">
+    <file>Resources/medlab_logo_new.jpg</file>
     <file>Resources/engineering_logo2_small.tif</file>
     <file>Resources/greencheck_small.png</file>
     <file>Resources/redX_small.png</file>
