@@ -923,7 +923,6 @@ void CI_Guidance::SetTransformforCI_target(patient_data * ref_patient_data, Eige
     T_ct_target.block<3, 3>(0, 0) = R_ct_target;
     T_ct_target.block<3, 1>(0, 3) = ref_patient_data->target();
 
-
     /* T_target_tool: transformation to tool base in the target frame (same as the tube tip frame) */
     // T_target_tool = T_tip_tool = (T_tool_tip)^-1
     Eigen::Matrix4d T_target_tool = Eigen::Matrix4d::Identity();
@@ -1113,8 +1112,9 @@ void CI_Guidance::slot_DatalogStart()
 	}
 
 	// write header
+    // x/y/z are distances from tip to desired target point; Tx/Ty/Tz/R00... is the AIT transform in tracker frame
 	QTextStream datalogStream(pDatalogFile);
-	datalogStream << "elapsed time [ms], x [mm], y [mm], z [mm], radial [mm], axial [mm], theta [rad], phi [rad]\n";
+	datalogStream << "elapsed time [ms], x [mm], y [mm], z [mm], radial [mm], axial [mm], theta [rad], phi [rad], Tx [mm], Ty [mm], Tz [mm], R00, R01, R02, R10, R11, R12, R20, R21, R22\n";
 	//datalogStream << "elapsed time [ms], error [mm]\n";
 	
 	// start timer
@@ -1153,12 +1153,24 @@ void CI_Guidance::slot_WriteData()
 {
 	// write next line
 	QTextStream datalogStream(pDatalogFile);
-	datalogStream << QString::number(m_datalogTimer.elapsed()) << ", " 
-				  << QString::number(m_errors.x) << ", "
-				  << QString::number(m_errors.y) << ", "
-				  << QString::number(m_errors.z) << ", "
-				  << QString::number(m_errors.radial) << ", "
-				  << QString::number(m_errors.axial) << ", "
-				  << QString::number(m_errors.theta) << ", "
-				  << QString::number(m_errors.phi)	 << endl;
+    datalogStream << QString::number(m_datalogTimer.elapsed()) << ", "
+        << QString::number(m_errors.x) << ", "
+        << QString::number(m_errors.y) << ", "
+        << QString::number(m_errors.z) << ", "
+        << QString::number(m_errors.radial) << ", "
+        << QString::number(m_errors.axial) << ", "
+        << QString::number(m_errors.theta) << ", "
+        << QString::number(m_errors.phi) << ", "
+        << QString::number(m_T_tracker_Ait(0, 3)) << ", "
+        << QString::number(m_T_tracker_Ait(1, 3)) << ", "
+        << QString::number(m_T_tracker_Ait(2, 3)) << ", "
+        << QString::number(m_T_tracker_Ait(0, 0)) << ", "
+        << QString::number(m_T_tracker_Ait(0, 1)) << ", "
+        << QString::number(m_T_tracker_Ait(0, 2)) << ", "
+        << QString::number(m_T_tracker_Ait(1, 0)) << ", "
+        << QString::number(m_T_tracker_Ait(1, 1)) << ", "
+        << QString::number(m_T_tracker_Ait(1, 2)) << ", "
+        << QString::number(m_T_tracker_Ait(2, 0)) << ", "
+        << QString::number(m_T_tracker_Ait(2, 1)) << ", "
+        << QString::number(m_T_tracker_Ait(2, 2)) << endl;
 }
