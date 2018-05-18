@@ -92,7 +92,7 @@ public:
         CI_Guidance_Ui->setCentralWidget(centralWidget);
         menuBar = new QMenuBar(CI_Guidance_Ui);
         menuBar->setObjectName(QStringLiteral("menuBar"));
-        menuBar->setGeometry(QRect(0, 0, 1016, 31));
+        menuBar->setGeometry(QRect(0, 0, 1016, 18));
         menuFile = new QMenu(menuBar);
         menuFile->setObjectName(QStringLiteral("menuFile"));
         menuTracker = new QMenu(menuBar);
