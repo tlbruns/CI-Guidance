@@ -1,7 +1,7 @@
 /********************************************************************************
 ** Form generated from reading UI file 'CI_Guidance.ui'
 **
-** Created by: Qt User Interface Compiler version 5.2.1
+** Created by: Qt User Interface Compiler version 5.10.1
 **
 ** WARNING! All changes made in this file will be lost when recompiling UI file!
 ********************************************************************************/
@@ -126,20 +126,20 @@ public:
 
     void retranslateUi(QMainWindow *CI_Guidance_Ui)
     {
-        CI_Guidance_Ui->setWindowTitle(QApplication::translate("CI_Guidance_Ui", "CI Guidance", 0));
-        actionClose->setText(QApplication::translate("CI_Guidance_Ui", "Close", 0));
-        actionLoad_Patient_File->setText(QApplication::translate("CI_Guidance_Ui", "Load Patient File", 0));
-        actionTracker_Setup->setText(QApplication::translate("CI_Guidance_Ui", "Tracker Setup", 0));
-        actionRegister_Patient->setText(QApplication::translate("CI_Guidance_Ui", "Register Patient", 0));
-        actionDemo->setText(QApplication::translate("CI_Guidance_Ui", "Demo", 0));
-        actionCenter_Target->setText(QApplication::translate("CI_Guidance_Ui", "Center Target", 0));
-        actionTracker_Init->setText(QApplication::translate("CI_Guidance_Ui", "Init", 0));
-        actionTracker_Stop->setText(QApplication::translate("CI_Guidance_Ui", "Stop", 0));
-        actionTracker_Setup_2->setText(QApplication::translate("CI_Guidance_Ui", "Setup", 0));
-        actionLoad_Plan->setText(QApplication::translate("CI_Guidance_Ui", "Load Plan", 0));
-        actionPivot_Calibration->setText(QApplication::translate("CI_Guidance_Ui", "Pivot Calibration", 0));
-        menuFile->setTitle(QApplication::translate("CI_Guidance_Ui", "File", 0));
-        menuTracker->setTitle(QApplication::translate("CI_Guidance_Ui", "Tracker", 0));
+        CI_Guidance_Ui->setWindowTitle(QApplication::translate("CI_Guidance_Ui", "CI Guidance", nullptr));
+        actionClose->setText(QApplication::translate("CI_Guidance_Ui", "Close", nullptr));
+        actionLoad_Patient_File->setText(QApplication::translate("CI_Guidance_Ui", "Load Patient File", nullptr));
+        actionTracker_Setup->setText(QApplication::translate("CI_Guidance_Ui", "Tracker Setup", nullptr));
+        actionRegister_Patient->setText(QApplication::translate("CI_Guidance_Ui", "Register Patient", nullptr));
+        actionDemo->setText(QApplication::translate("CI_Guidance_Ui", "Demo", nullptr));
+        actionCenter_Target->setText(QApplication::translate("CI_Guidance_Ui", "Center Target", nullptr));
+        actionTracker_Init->setText(QApplication::translate("CI_Guidance_Ui", "Init", nullptr));
+        actionTracker_Stop->setText(QApplication::translate("CI_Guidance_Ui", "Stop", nullptr));
+        actionTracker_Setup_2->setText(QApplication::translate("CI_Guidance_Ui", "Setup", nullptr));
+        actionLoad_Plan->setText(QApplication::translate("CI_Guidance_Ui", "Load Plan", nullptr));
+        actionPivot_Calibration->setText(QApplication::translate("CI_Guidance_Ui", "Pivot Calibration", nullptr));
+        menuFile->setTitle(QApplication::translate("CI_Guidance_Ui", "File", nullptr));
+        menuTracker->setTitle(QApplication::translate("CI_Guidance_Ui", "Tracker", nullptr));
     } // retranslateUi
 
 };

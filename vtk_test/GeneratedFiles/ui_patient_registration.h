@@ -1,7 +1,7 @@
 /********************************************************************************
 ** Form generated from reading UI file 'patient_registration.ui'
 **
-** Created by: Qt User Interface Compiler version 5.2.1
+** Created by: Qt User Interface Compiler version 5.10.1
 **
 ** WARNING! All changes made in this file will be lost when recompiling UI file!
 ********************************************************************************/
@@ -483,7 +483,6 @@ public:
         button_finish = new QPushButton(PatientRegistration);
         button_finish->setObjectName(QStringLiteral("button_finish"));
         button_finish->setCheckable(false);
-        button_finish->setDefault(false);
         button_finish->setFlat(false);
 
         horizontalLayout->addWidget(button_finish);
@@ -498,53 +497,56 @@ public:
         retranslateUi(PatientRegistration);
         QObject::connect(button_cancel, SIGNAL(clicked()), PatientRegistration, SLOT(close()));
 
+        button_finish->setDefault(false);
+
+
         QMetaObject::connectSlotsByName(PatientRegistration);
     } // setupUi
 
     void retranslateUi(QDialog *PatientRegistration)
     {
-        PatientRegistration->setWindowTitle(QApplication::translate("PatientRegistration", "Dialog", 0));
-        groupBox_header->setTitle(QApplication::translate("PatientRegistration", "Patient Registration", 0));
-        label_5->setText(QApplication::translate("PatientRegistration", "Instructions:", 0));
-        label_6->setText(QApplication::translate("PatientRegistration", "Place the probe on each marker and press \"Start Collection\" to begin sampling after a 3 second delay. A fit check will be performed once all markers have been registered. If it fails, you must repeat before saving.", 0));
-        groupBox_mk1->setTitle(QApplication::translate("PatientRegistration", "Marker 1", 0));
-        button_mk1_collection->setText(QApplication::translate("PatientRegistration", "Start Collection", 0));
-        progressBar_mk1->setFormat(QApplication::translate("PatientRegistration", "%v/%m", 0));
-        label_2->setText(QApplication::translate("PatientRegistration", "<b>x</b>", 0));
-        label_mk1_x->setText(QApplication::translate("PatientRegistration", "-0000.00", 0));
-        label_3->setText(QApplication::translate("PatientRegistration", "<b>y</b>", 0));
-        label_mk1_y->setText(QApplication::translate("PatientRegistration", "-0000.00", 0));
-        label_4->setText(QApplication::translate("PatientRegistration", "<b>z</b>", 0));
-        label_mk1_z->setText(QApplication::translate("PatientRegistration", "-0000.00", 0));
+        PatientRegistration->setWindowTitle(QApplication::translate("PatientRegistration", "Dialog", nullptr));
+        groupBox_header->setTitle(QApplication::translate("PatientRegistration", "Patient Registration", nullptr));
+        label_5->setText(QApplication::translate("PatientRegistration", "Instructions:", nullptr));
+        label_6->setText(QApplication::translate("PatientRegistration", "Place the probe on each marker and press \"Start Collection\" to begin sampling after a 3 second delay. A fit check will be performed once all markers have been registered. If it fails, you must repeat before saving.", nullptr));
+        groupBox_mk1->setTitle(QApplication::translate("PatientRegistration", "Marker 1", nullptr));
+        button_mk1_collection->setText(QApplication::translate("PatientRegistration", "Start Collection", nullptr));
+        progressBar_mk1->setFormat(QApplication::translate("PatientRegistration", "%v/%m", nullptr));
+        label_2->setText(QApplication::translate("PatientRegistration", "<b>x</b>", nullptr));
+        label_mk1_x->setText(QApplication::translate("PatientRegistration", "-0000.00", nullptr));
+        label_3->setText(QApplication::translate("PatientRegistration", "<b>y</b>", nullptr));
+        label_mk1_y->setText(QApplication::translate("PatientRegistration", "-0000.00", nullptr));
+        label_4->setText(QApplication::translate("PatientRegistration", "<b>z</b>", nullptr));
+        label_mk1_z->setText(QApplication::translate("PatientRegistration", "-0000.00", nullptr));
         label_mk1_msg->setText(QString());
-        groupBox_mk2->setTitle(QApplication::translate("PatientRegistration", "Marker 2", 0));
-        button_mk2_collection->setText(QApplication::translate("PatientRegistration", "Start Collection", 0));
-        progressBar_mk2->setFormat(QApplication::translate("PatientRegistration", "%v/%m", 0));
-        label_7->setText(QApplication::translate("PatientRegistration", "<b>x</b>", 0));
-        label_mk2_x->setText(QApplication::translate("PatientRegistration", "-0000.00", 0));
-        label_8->setText(QApplication::translate("PatientRegistration", "<b>y</b>", 0));
-        label_mk2_y->setText(QApplication::translate("PatientRegistration", "-0000.00", 0));
-        label_9->setText(QApplication::translate("PatientRegistration", "<b>z</b>", 0));
-        label_mk2_z->setText(QApplication::translate("PatientRegistration", "-0000.00", 0));
+        groupBox_mk2->setTitle(QApplication::translate("PatientRegistration", "Marker 2", nullptr));
+        button_mk2_collection->setText(QApplication::translate("PatientRegistration", "Start Collection", nullptr));
+        progressBar_mk2->setFormat(QApplication::translate("PatientRegistration", "%v/%m", nullptr));
+        label_7->setText(QApplication::translate("PatientRegistration", "<b>x</b>", nullptr));
+        label_mk2_x->setText(QApplication::translate("PatientRegistration", "-0000.00", nullptr));
+        label_8->setText(QApplication::translate("PatientRegistration", "<b>y</b>", nullptr));
+        label_mk2_y->setText(QApplication::translate("PatientRegistration", "-0000.00", nullptr));
+        label_9->setText(QApplication::translate("PatientRegistration", "<b>z</b>", nullptr));
+        label_mk2_z->setText(QApplication::translate("PatientRegistration", "-0000.00", nullptr));
         label_mk2_msg->setText(QString());
-        groupBox_mk3->setTitle(QApplication::translate("PatientRegistration", "Marker 3", 0));
-        button_mk3_collection->setText(QApplication::translate("PatientRegistration", "Start Collection", 0));
-        progressBar_mk3->setFormat(QApplication::translate("PatientRegistration", "%v/%m", 0));
-        label_10->setText(QApplication::translate("PatientRegistration", "<b>x</b>", 0));
-        label_mk3_x->setText(QApplication::translate("PatientRegistration", "-0000.00", 0));
-        label_11->setText(QApplication::translate("PatientRegistration", "<b>y</b>", 0));
-        label_mk3_y->setText(QApplication::translate("PatientRegistration", "-0000.00", 0));
-        label_12->setText(QApplication::translate("PatientRegistration", "<b>z</b>", 0));
-        label_mk3_z->setText(QApplication::translate("PatientRegistration", "-0000.00", 0));
+        groupBox_mk3->setTitle(QApplication::translate("PatientRegistration", "Marker 3", nullptr));
+        button_mk3_collection->setText(QApplication::translate("PatientRegistration", "Start Collection", nullptr));
+        progressBar_mk3->setFormat(QApplication::translate("PatientRegistration", "%v/%m", nullptr));
+        label_10->setText(QApplication::translate("PatientRegistration", "<b>x</b>", nullptr));
+        label_mk3_x->setText(QApplication::translate("PatientRegistration", "-0000.00", nullptr));
+        label_11->setText(QApplication::translate("PatientRegistration", "<b>y</b>", nullptr));
+        label_mk3_y->setText(QApplication::translate("PatientRegistration", "-0000.00", nullptr));
+        label_12->setText(QApplication::translate("PatientRegistration", "<b>z</b>", nullptr));
+        label_mk3_z->setText(QApplication::translate("PatientRegistration", "-0000.00", nullptr));
         label_mk3_msg->setText(QString());
-        groupBox_skull->setTitle(QApplication::translate("PatientRegistration", "Skull Markers", 0));
-        button_skull_collection->setText(QApplication::translate("PatientRegistration", "Start Collection", 0));
-        progressBar_skull->setFormat(QApplication::translate("PatientRegistration", "%v/%m", 0));
+        groupBox_skull->setTitle(QApplication::translate("PatientRegistration", "Skull Markers", nullptr));
+        button_skull_collection->setText(QApplication::translate("PatientRegistration", "Start Collection", nullptr));
+        progressBar_skull->setFormat(QApplication::translate("PatientRegistration", "%v/%m", nullptr));
         label_skull_msg->setText(QString());
         label_registration_msg->setText(QString());
         label_registration_check->setText(QString());
-        button_cancel->setText(QApplication::translate("PatientRegistration", "Cancel", 0));
-        button_finish->setText(QApplication::translate("PatientRegistration", "Register", 0));
+        button_cancel->setText(QApplication::translate("PatientRegistration", "Cancel", nullptr));
+        button_finish->setText(QApplication::translate("PatientRegistration", "Register", nullptr));
     } // retranslateUi
 
 };

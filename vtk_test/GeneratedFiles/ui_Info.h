@@ -1,7 +1,7 @@
 /********************************************************************************
 ** Form generated from reading UI file 'Info.ui'
 **
-** Created by: Qt User Interface Compiler version 5.2.1
+** Created by: Qt User Interface Compiler version 5.10.1
 **
 ** WARNING! All changes made in this file will be lost when recompiling UI file!
 ********************************************************************************/
@@ -575,53 +575,53 @@ public:
 
     void retranslateUi(QWidget *Info)
     {
-        Info->setWindowTitle(QApplication::translate("Info", "Form", 0));
-        probeBox->setTitle(QApplication::translate("Info", "Probe", 0));
-        label->setText(QApplication::translate("Info", "<b>x</b>", 0));
-        label_probe_x->setText(QApplication::translate("Info", "-0000.00", 0));
-        label_2->setText(QApplication::translate("Info", "<b>y</b>", 0));
-        label_probe_y->setText(QApplication::translate("Info", "-0000.00", 0));
-        label_3->setText(QApplication::translate("Info", "<b>z</b>", 0));
-        label_probe_z->setText(QApplication::translate("Info", "-0000.00", 0));
-        button_centerProbe->setText(QApplication::translate("Info", "Center View", 0));
-        CIToolBox->setTitle(QApplication::translate("Info", "CI Tool", 0));
-        label_4->setText(QApplication::translate("Info", "<b>x</b>", 0));
-        label_ci_x->setText(QApplication::translate("Info", "-0000.00", 0));
-        label_5->setText(QApplication::translate("Info", "<b>y</b>", 0));
-        label_ci_y->setText(QApplication::translate("Info", "-0000.00", 0));
-        label_6->setText(QApplication::translate("Info", "<b>z</b>", 0));
-        label_ci_z->setText(QApplication::translate("Info", "-0000.00", 0));
-        button_centerCItool->setText(QApplication::translate("Info", "Center View", 0));
-        MagnetBox->setTitle(QApplication::translate("Info", "Magnet", 0));
-        label_7->setText(QApplication::translate("Info", "<b>x</b>", 0));
-        label_mag_x->setText(QApplication::translate("Info", "-0000.00", 0));
-        label_8->setText(QApplication::translate("Info", "<b>y</b>", 0));
-        label_mag_y->setText(QApplication::translate("Info", "-0000.00", 0));
-        label_9->setText(QApplication::translate("Info", "<b>z</b>", 0));
-        label_mag_z->setText(QApplication::translate("Info", "-0000.00", 0));
-        checkBox_LiveTarget->setText(QApplication::translate("Info", "Live Target Tracking", 0));
-        label_FRE->setText(QApplication::translate("Info", "FRE = ", 0));
-        ErrorBox_position->setTitle(QApplication::translate("Info", "Position Error", 0));
-        label_ci_err_pos->setText(QApplication::translate("Info", "000.00", 0));
+        Info->setWindowTitle(QApplication::translate("Info", "Form", nullptr));
+        probeBox->setTitle(QApplication::translate("Info", "Probe", nullptr));
+        label->setText(QApplication::translate("Info", "<b>x</b>", nullptr));
+        label_probe_x->setText(QApplication::translate("Info", "-0000.00", nullptr));
+        label_2->setText(QApplication::translate("Info", "<b>y</b>", nullptr));
+        label_probe_y->setText(QApplication::translate("Info", "-0000.00", nullptr));
+        label_3->setText(QApplication::translate("Info", "<b>z</b>", nullptr));
+        label_probe_z->setText(QApplication::translate("Info", "-0000.00", nullptr));
+        button_centerProbe->setText(QApplication::translate("Info", "Center View", nullptr));
+        CIToolBox->setTitle(QApplication::translate("Info", "CI Tool", nullptr));
+        label_4->setText(QApplication::translate("Info", "<b>x</b>", nullptr));
+        label_ci_x->setText(QApplication::translate("Info", "-0000.00", nullptr));
+        label_5->setText(QApplication::translate("Info", "<b>y</b>", nullptr));
+        label_ci_y->setText(QApplication::translate("Info", "-0000.00", nullptr));
+        label_6->setText(QApplication::translate("Info", "<b>z</b>", nullptr));
+        label_ci_z->setText(QApplication::translate("Info", "-0000.00", nullptr));
+        button_centerCItool->setText(QApplication::translate("Info", "Center View", nullptr));
+        MagnetBox->setTitle(QApplication::translate("Info", "Magnet", nullptr));
+        label_7->setText(QApplication::translate("Info", "<b>x</b>", nullptr));
+        label_mag_x->setText(QApplication::translate("Info", "-0000.00", nullptr));
+        label_8->setText(QApplication::translate("Info", "<b>y</b>", nullptr));
+        label_mag_y->setText(QApplication::translate("Info", "-0000.00", nullptr));
+        label_9->setText(QApplication::translate("Info", "<b>z</b>", nullptr));
+        label_mag_z->setText(QApplication::translate("Info", "-0000.00", nullptr));
+        checkBox_LiveTarget->setText(QApplication::translate("Info", "Live Target Tracking", nullptr));
+        label_FRE->setText(QApplication::translate("Info", "FRE = ", nullptr));
+        ErrorBox_position->setTitle(QApplication::translate("Info", "Position Error", nullptr));
+        label_ci_err_pos->setText(QApplication::translate("Info", "000.00", nullptr));
         label_mag_status->setText(QString());
-        label_text_CITool_pos->setText(QApplication::translate("Info", "CI Tool", 0));
+        label_text_CITool_pos->setText(QApplication::translate("Info", "CI Tool", nullptr));
         progressBar_CI_err_pos->setFormat(QString());
         progressBar_mag_err->setFormat(QString());
         label_ci_status->setText(QString());
-        label_text_Magnet->setText(QApplication::translate("Info", "Magnet", 0));
-        label_mag_err->setText(QApplication::translate("Info", "000.00", 0));
-        label_text_error2_2->setText(QApplication::translate("Info", "Error =", 0));
-        label_text_error2->setText(QApplication::translate("Info", "Error =", 0));
-        label_text_error2_3->setText(QApplication::translate("Info", "mm", 0));
-        ErrorBox_angle->setTitle(QApplication::translate("Info", "Angular Error", 0));
-        label_ci_err_ang->setText(QApplication::translate("Info", "000.00", 0));
+        label_text_Magnet->setText(QApplication::translate("Info", "Magnet", nullptr));
+        label_mag_err->setText(QApplication::translate("Info", "000.00", nullptr));
+        label_text_error2_2->setText(QApplication::translate("Info", "Error =", nullptr));
+        label_text_error2->setText(QApplication::translate("Info", "Error =", nullptr));
+        label_text_error2_3->setText(QApplication::translate("Info", "mm", nullptr));
+        ErrorBox_angle->setTitle(QApplication::translate("Info", "Angular Error", nullptr));
+        label_ci_err_ang->setText(QApplication::translate("Info", "000.00", nullptr));
         progressBar_CI_err_ang->setFormat(QString());
-        label_text_error2_4->setText(QApplication::translate("Info", "deg", 0));
+        label_text_error2_4->setText(QApplication::translate("Info", "deg", nullptr));
         label_ci_status_ang->setText(QString());
-        label_text_error2_5->setText(QApplication::translate("Info", "Error =", 0));
+        label_text_error2_5->setText(QApplication::translate("Info", "Error =", nullptr));
         label_mag_status_3->setText(QString());
-        label_text_CITool_ang->setText(QApplication::translate("Info", "CI Tool", 0));
-        button_recordData->setText(QApplication::translate("Info", "Record Data", 0));
+        label_text_CITool_ang->setText(QApplication::translate("Info", "CI Tool", nullptr));
+        button_recordData->setText(QApplication::translate("Info", "Record Data", nullptr));
         label_recordData->setText(QString());
         logo_medlab->setText(QString());
     } // retranslateUi

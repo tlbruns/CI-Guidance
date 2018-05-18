@@ -1,7 +1,7 @@
 /********************************************************************************
 ** Form generated from reading UI file 'TrackerSetup.ui'
 **
-** Created by: Qt User Interface Compiler version 5.2.1
+** Created by: Qt User Interface Compiler version 5.10.1
 **
 ** WARNING! All changes made in this file will be lost when recompiling UI file!
 ********************************************************************************/
@@ -57,10 +57,10 @@ public:
 
     void retranslateUi(QWidget *TrackerSetup)
     {
-        TrackerSetup->setWindowTitle(QApplication::translate("TrackerSetup", "TrackerSetup", 0));
-        label->setText(QApplication::translate("TrackerSetup", "Select COM port", 0));
-        selectButton->setText(QApplication::translate("TrackerSetup", "Select", 0));
-        cancelButton->setText(QApplication::translate("TrackerSetup", "Cancel", 0));
+        TrackerSetup->setWindowTitle(QApplication::translate("TrackerSetup", "TrackerSetup", nullptr));
+        label->setText(QApplication::translate("TrackerSetup", "Select COM port", nullptr));
+        selectButton->setText(QApplication::translate("TrackerSetup", "Select", nullptr));
+        cancelButton->setText(QApplication::translate("TrackerSetup", "Cancel", nullptr));
     } // retranslateUi
 
 };

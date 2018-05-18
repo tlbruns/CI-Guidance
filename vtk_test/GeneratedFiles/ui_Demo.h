@@ -1,7 +1,7 @@
 /********************************************************************************
 ** Form generated from reading UI file 'Demo.ui'
 **
-** Created by: Qt User Interface Compiler version 5.2.1
+** Created by: Qt User Interface Compiler version 5.10.1
 **
 ** WARNING! All changes made in this file will be lost when recompiling UI file!
 ********************************************************************************/
@@ -113,7 +113,6 @@ public:
         button_end = new QPushButton(Demo);
         button_end->setObjectName(QStringLiteral("button_end"));
         button_end->setCheckable(false);
-        button_end->setDefault(false);
         button_end->setFlat(false);
 
         horizontalLayout->addWidget(button_end);
@@ -127,18 +126,21 @@ public:
 
         retranslateUi(Demo);
 
+        button_end->setDefault(false);
+
+
         QMetaObject::connectSlotsByName(Demo);
     } // setupUi
 
     void retranslateUi(QDialog *Demo)
     {
-        Demo->setWindowTitle(QApplication::translate("Demo", "Dialog", 0));
-        groupBox_2->setTitle(QApplication::translate("Demo", "Demo", 0));
-        label_5->setText(QApplication::translate("Demo", "Instructions:", 0));
-        label_6->setText(QApplication::translate("Demo", "Position tool in desired target position and click 'Set Target'. Then move tool away and click 'Record Data'. Use the gui to align the tool. When satisfied, click 'Done'.", 0));
-        button_set_target->setText(QApplication::translate("Demo", "Set Target", 0));
-        button_datalog->setText(QApplication::translate("Demo", "Record Data", 0));
-        button_end->setText(QApplication::translate("Demo", "Done", 0));
+        Demo->setWindowTitle(QApplication::translate("Demo", "Dialog", nullptr));
+        groupBox_2->setTitle(QApplication::translate("Demo", "Demo", nullptr));
+        label_5->setText(QApplication::translate("Demo", "Instructions:", nullptr));
+        label_6->setText(QApplication::translate("Demo", "Position tool in desired target position and click 'Set Target'. Then move tool away and click 'Record Data'. Use the gui to align the tool. When satisfied, click 'Done'.", nullptr));
+        button_set_target->setText(QApplication::translate("Demo", "Set Target", nullptr));
+        button_datalog->setText(QApplication::translate("Demo", "Record Data", nullptr));
+        button_end->setText(QApplication::translate("Demo", "Done", nullptr));
     } // retranslateUi
 
 };

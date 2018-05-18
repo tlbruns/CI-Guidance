@@ -1,7 +1,7 @@
 /********************************************************************************
 ** Form generated from reading UI file 'Pivot_Calibration.ui'
 **
-** Created by: Qt User Interface Compiler version 5.2.1
+** Created by: Qt User Interface Compiler version 5.10.1
 **
 ** WARNING! All changes made in this file will be lost when recompiling UI file!
 ********************************************************************************/
@@ -286,29 +286,29 @@ public:
 
     void retranslateUi(QDialog *PivotCalibration)
     {
-        PivotCalibration->setWindowTitle(QApplication::translate("PivotCalibration", "Dialog", 0));
-        groupBox_header->setTitle(QApplication::translate("PivotCalibration", "Pivot Calibration", 0));
-        label_instructionsHeader->setText(QApplication::translate("PivotCalibration", "Instructions:", 0));
-        label_instructions->setText(QApplication::translate("PivotCalibration", "Place the tip of the tool on the pivot point and press \"Take Sample\". It is recommended that you take at least 10 samples from different orientations.", 0));
-        pushButton_takeSample->setText(QApplication::translate("PivotCalibration", "Take Sample", 0));
-        label_numSamples->setText(QApplication::translate("PivotCalibration", "0", 0));
-        label_samples->setText(QApplication::translate("PivotCalibration", "Total Samples = ", 0));
-        pushButton_computeOffset->setText(QApplication::translate("PivotCalibration", "Compute Offset", 0));
-        pushButton_reset->setText(QApplication::translate("PivotCalibration", "Reset", 0));
-        label_offsetText->setText(QApplication::translate("PivotCalibration", "Calculated Tip Offset:", 0));
-        label_x_2->setText(QApplication::translate("PivotCalibration", "X", 0));
-        label_offsetX->setText(QApplication::translate("PivotCalibration", "-000.00", 0));
-        label_y_2->setText(QApplication::translate("PivotCalibration", "Y", 0));
-        label_offsetY->setText(QApplication::translate("PivotCalibration", "-000.00", 0));
-        label_z_2->setText(QApplication::translate("PivotCalibration", "Z", 0));
-        label_offsetZ->setText(QApplication::translate("PivotCalibration", "-000.00", 0));
-        label_pivotText->setText(QApplication::translate("PivotCalibration", "Estimated Pivot Location:", 0));
-        label_x->setText(QApplication::translate("PivotCalibration", "X", 0));
-        label_pivotX->setText(QApplication::translate("PivotCalibration", "-0000.00", 0));
-        label_y->setText(QApplication::translate("PivotCalibration", "Y", 0));
-        label_pivotY->setText(QApplication::translate("PivotCalibration", "-0000.00", 0));
-        label_z->setText(QApplication::translate("PivotCalibration", "Z", 0));
-        label_pivotZ->setText(QApplication::translate("PivotCalibration", "-0000.00", 0));
+        PivotCalibration->setWindowTitle(QApplication::translate("PivotCalibration", "Dialog", nullptr));
+        groupBox_header->setTitle(QApplication::translate("PivotCalibration", "Pivot Calibration", nullptr));
+        label_instructionsHeader->setText(QApplication::translate("PivotCalibration", "Instructions:", nullptr));
+        label_instructions->setText(QApplication::translate("PivotCalibration", "Place the tip of the tool on the pivot point and press \"Take Sample\". It is recommended that you take at least 10 samples from different orientations.", nullptr));
+        pushButton_takeSample->setText(QApplication::translate("PivotCalibration", "Take Sample", nullptr));
+        label_numSamples->setText(QApplication::translate("PivotCalibration", "0", nullptr));
+        label_samples->setText(QApplication::translate("PivotCalibration", "Total Samples = ", nullptr));
+        pushButton_computeOffset->setText(QApplication::translate("PivotCalibration", "Compute Offset", nullptr));
+        pushButton_reset->setText(QApplication::translate("PivotCalibration", "Reset", nullptr));
+        label_offsetText->setText(QApplication::translate("PivotCalibration", "Calculated Tip Offset:", nullptr));
+        label_x_2->setText(QApplication::translate("PivotCalibration", "X", nullptr));
+        label_offsetX->setText(QApplication::translate("PivotCalibration", "-000.00", nullptr));
+        label_y_2->setText(QApplication::translate("PivotCalibration", "Y", nullptr));
+        label_offsetY->setText(QApplication::translate("PivotCalibration", "-000.00", nullptr));
+        label_z_2->setText(QApplication::translate("PivotCalibration", "Z", nullptr));
+        label_offsetZ->setText(QApplication::translate("PivotCalibration", "-000.00", nullptr));
+        label_pivotText->setText(QApplication::translate("PivotCalibration", "Estimated Pivot Location:", nullptr));
+        label_x->setText(QApplication::translate("PivotCalibration", "X", nullptr));
+        label_pivotX->setText(QApplication::translate("PivotCalibration", "-0000.00", nullptr));
+        label_y->setText(QApplication::translate("PivotCalibration", "Y", nullptr));
+        label_pivotY->setText(QApplication::translate("PivotCalibration", "-0000.00", nullptr));
+        label_z->setText(QApplication::translate("PivotCalibration", "Z", nullptr));
+        label_pivotZ->setText(QApplication::translate("PivotCalibration", "-0000.00", nullptr));
     } // retranslateUi
 
 };
