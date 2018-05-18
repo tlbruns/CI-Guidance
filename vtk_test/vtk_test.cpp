@@ -24,6 +24,7 @@
 #include <vtkProperty.h>
 #include <vtkTriangleFilter.h>
 #include <vtkStripper.h>
+#define _USE_MATH_DEFINES
 #include <math.h>
 #include <Eigen/Core>
 #include <Eigen/Dense>
@@ -31,6 +32,7 @@
 #include "infowidget.h"
 #include <cassert>
 #include <boost/ptr_container/ptr_vector.hpp>
+
 
 #ifndef NDEBUG
 #define PRINT_MATRIX(mat) {std::cout << #mat ##":" << std::endl << mat << std::endl;}
